@@ -1,0 +1,4 @@
+language: cpp
+compiler: gcc
+script: make CXX=$CXX && make test
+sudo: false

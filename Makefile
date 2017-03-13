@@ -115,7 +115,7 @@ $(TARGET): $(OBJS)
 $(foreach SRC,$(SRCS),$(eval $(filter-out \,$(shell $(CXX) -MM $(SRC)))))
 
 test: $(TARGET)
-	@./$<
+	$(MAKE) -C t/
 
 depends:
 	$(CXX) -MM $(SRCS) > $(DEPENDS)
