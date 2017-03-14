@@ -17,9 +17,9 @@ RM := rm -f
 
 define generate-interpreter-test
 $1:
-	@$(ECHO) -n "Interpreter test: $2.b ... "
+	@$(ECHO) -n "Interpreter$3 test: $2.b ... "
 	@([ -f $(INPUTS_DIR)/$2.txt ] \
-		&& $(BRAINFUCK) $2.b < $(INPUTS_DIR)/$2.txt || $(BRAINFUCK) $2.b) \
+		&& $(BRAINFUCK) -O$3 $2.b < $(INPUTS_DIR)/$2.txt || $(BRAINFUCK) -O$3 $2.b) \
 		| $(DIFF) - $(EXPECTS_DIR)/$2.txt > /dev/null
 	@$(ECHO) 'Success'
 endef
@@ -32,6 +32,6 @@ all: $(BRAINFUCK) interpreter
 $(BRAINFUCK):
 	$(MAKE) -C ../
 
-interpreter: $(foreach TEST,$(TESTS),interpreter_$(TEST))
+interpreter: $(foreach OPT_LEVEL,0 1,$(foreach TEST,$(TESTS),interpreter$(OPT_LEVEL)_$(TEST)))
 
-$(foreach TEST,$(TESTS),$(eval $(call generate-interpreter-test,interpreter_$(TEST),$(TEST))))
+$(foreach OPT_LEVEL,0 1,$(foreach TEST,$(TESTS),$(eval $(call generate-interpreter-test,interpreter$(OPT_LEVEL)_$(TEST),$(TEST),$(OPT_LEVEL)))))

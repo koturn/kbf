@@ -514,7 +514,7 @@ public:
 
   /*!
    * @brief Get indent string for description
-   * @return 
+   * @return Return an indetn string with newline character
    */
   std::string
   getNewlineDescription() const ARGUMENT_PARSER_NOEXCEPT
