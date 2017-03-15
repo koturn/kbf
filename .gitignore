@@ -1,5 +1,9 @@
+html/
+latex/
 *.exe
 *.o
 *.obj
 *.out
 *.pdb
+doxygen_sqlite3.db
+Doxyfile
