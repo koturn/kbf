@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -160,7 +161,7 @@ private:
    * @param [in] pc  A program counter
    * @param [in] c1  Pair 1
    * @param [in] c2  Pair 2
-   * @return 
+   * @return Compressed size
    */
   int
   compressInstruction(std::size_t& pc, char c1, char c2) BRAINFUCK_NOEXCEPT
@@ -494,7 +495,7 @@ public:
    * @param [in] heapSize  Heap size for execution
    */
   void
-  execute(std::size_t heapSize=kDefaultHeapSize) BRAINFUCK_NOEXCEPT
+  execute(std::size_t heapSize=kDefaultHeapSize) const BRAINFUCK_NOEXCEPT
   {
     std::unique_ptr<unsigned char[]> heap(new unsigned char[heapSize]);
     std::fill_n(heap.get(), heapSize, 0);
@@ -513,7 +514,7 @@ public:
    * @param [in,out] heap  Pointer to heap memory
    */
   void
-  execute(unsigned char* heap) BRAINFUCK_NOEXCEPT
+  execute(unsigned char* heap) const BRAINFUCK_NOEXCEPT
   {
     std::size_t hp = 0;
     for (std::string::size_type pc = 0; pc < bfSource.size(); pc++) {
@@ -580,7 +581,7 @@ public:
    * @param [in,out] heap  Pointer to heap memory
    */
   void
-  executeIR(unsigned char* heap) BRAINFUCK_NOEXCEPT
+  executeIR(unsigned char* heap) const BRAINFUCK_NOEXCEPT
   {
     std::size_t hp = 0;
     for (std::vector<BfInst>::size_type pc = 0, size = ircode.size(); pc < size; pc++) {
@@ -690,7 +691,7 @@ public:
    * @brief Dump IR code (Debug function)
    */
   void
-  dumpIR() BRAINFUCK_NOEXCEPT
+  dumpIR() const BRAINFUCK_NOEXCEPT
   {
     for (std::vector<BfInst>::size_type pc = 0, size = ircode.size(); pc < size; pc++) {
       switch (ircode[pc].type) {

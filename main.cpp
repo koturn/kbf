@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <array>
+#include <exception>
 #include <iostream>
 #include "ArgumentParser.hpp"
 #include "Brainfuck.hpp"
@@ -11,9 +12,9 @@ main(int argc, const char* argv[])
   try {
     ArgumentParser ap(argv[0]);
     ap.add('h', "help", "Show help and exit this program");
-    ap.add('O', "optimize", ArgumentParser::OptionType::REQUIRED_ARGUMENT, "Specify optimization level", "LEVEL", 1);
+    ap.add('O', "optimize", ArgumentParser::OptionType::kRequiredArgument, "Specify optimization level", "LEVEL", 1);
     ap.add("enable-synchronize-with-stdio", "Disable synchronization between std::cout/std::cin and <cstdio>");
-    ap.add("heap-size", ArgumentParser::OptionType::REQUIRED_ARGUMENT, "Specify heap memory size", "HEAP_SIZE", 65536);
+    ap.add("heap-size", ArgumentParser::OptionType::kRequiredArgument, "Specify heap memory size", "HEAP_SIZE", 65536);
     ap.add("use-stack-memory", "Use stack memory for execution");
     ap.parse(argc, argv);
 

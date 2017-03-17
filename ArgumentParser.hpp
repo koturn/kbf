@@ -42,17 +42,17 @@ public:
   enum class OptionType
   {
     //! Means taht an option requires no argument
-    NO_ARGUMENT,
+    kNoArgument,
     //! Means taht an option requires an argument
-    REQUIRED_ARGUMENT,
+    kRequiredArgument,
     /*!
      * @brief Means taht an option may or may not requires an argument
      *
-     * For a short option, this enum value is equivalent to @code OptionType::REQUIRED_ARGUMENT @endcode .
+     * For a short option, this enum value is equivalent to @code OptionType::kRequiredArgument @endcode .
      * But for a long option, an option isn't necessarily given argument.
      * If no argument is specified, "1" is set to an option value
      */
-    OPTIONAL_ARGUMENT
+    kOptionalArgument
   };  // enum class OptionType
 #else
   /*!
@@ -68,17 +68,17 @@ public:
     enum OptionTypeEnum
     {
       //! Means taht an option requires no argument
-      NO_ARGUMENT,
+      kNoArgument,
       //! Means taht an option requires an argument
-      REQUIRED_ARGUMENT,
+      kRequiredArgument,
       /*!
        * @brief Means taht an option may or may not requires an argument
        *
-       * For a short option, this enum value is equivalent to @code OptionType::REQUIRED_ARGUMENT @endcode .
+       * For a short option, this enum value is equivalent to @code OptionType::kRequiredArgument @endcode .
        * But for a long option, an option isn't necessarily given argument.
        * If no argument is specified, "1" is set to an option value
        */
-      OPTIONAL_ARGUMENT
+      kOptionalArgument
     };
     /*!
      * @brief Implicit convert from @code OptionType @endcode to @code OptionTypeEnum @endcode
@@ -126,7 +126,7 @@ private:
     OptionItem() :
       shortOptName(-1),
       longOptName(),
-      optType(OptionType::NO_ARGUMENT),
+      optType(OptionType::kNoArgument),
       description(),
       metavar(),
       value()
@@ -281,7 +281,7 @@ private:
         throw std::runtime_error("Unknown option: -" + std::string(1, static_cast<char>(shortName)));
       }
       OptionItem& item = options[shortOptMap[shortName]];
-      if (item.optType == OptionType::NO_ARGUMENT) {
+      if (item.optType == OptionType::kNoArgument) {
         item.value = STRING_TRUE;
       } else if (i == optBody.length() - 1) {
         if (idx + 1 >= args.size()) {
@@ -330,16 +330,16 @@ private:
     }
     OptionItem& item = options[indices[0]];
     switch (item.optType) {
-      case OptionType::NO_ARGUMENT:
+      case OptionType::kNoArgument:
         if (pos != std::string::npos) {
           throw std::runtime_error("Option doesn't take an argument: --" + longOptName);
         }
         item.value = STRING_TRUE;
         return idx;
-      case OptionType::OPTIONAL_ARGUMENT:
+      case OptionType::kOptionalArgument:
         item.value = (pos == std::string::npos ? STRING_TRUE : value);
         return idx;
-      case OptionType::REQUIRED_ARGUMENT:
+      case OptionType::kRequiredArgument:
         if (pos == std::string::npos) {
           if (idx + 1 >= args.size()) {
             throw std::runtime_error("Option requires an argument: --" + longOptName);
@@ -366,7 +366,7 @@ private:
       const OptionItem& item) ARGUMENT_PARSER_NOEXCEPT
   {
     os << "-" << static_cast<char>(item.shortOptName);
-    if (item.optType != OptionType::NO_ARGUMENT) {
+    if (item.optType != OptionType::kNoArgument) {
       os << " " << item.metavar;
     }
   }
@@ -383,12 +383,12 @@ private:
   {
     os << "--" << item.longOptName;
     switch (item.optType) {
-      case OptionType::NO_ARGUMENT:
+      case OptionType::kNoArgument:
         break;
-      case OptionType::OPTIONAL_ARGUMENT:
+      case OptionType::kOptionalArgument:
         os << "[=" << item.metavar << "]";
         break;
-      case OptionType::REQUIRED_ARGUMENT:
+      case OptionType::kRequiredArgument:
         os << "=" << item.metavar;
         break;
     }
@@ -540,7 +540,7 @@ public:
       const std::string& metavar=DEFAULT_METAVAR,
       const std::string& defaultValue="")
   {
-    const std::string& dv = ((optType == OptionType::NO_ARGUMENT && defaultValue.empty()) ? STRING_FALSE : defaultValue);
+    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? STRING_FALSE : defaultValue);
     shortOptMap[shortOptName] = options.size();
     longOptMap[longOptName] = options.size();
 #if __cplusplus >= 201103L
@@ -566,7 +566,7 @@ public:
       const std::string& metavar=DEFAULT_METAVAR,
       const std::string& defaultValue="")
   {
-    const std::string& dv = ((optType == OptionType::NO_ARGUMENT && defaultValue.empty()) ? STRING_FALSE : defaultValue);
+    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? STRING_FALSE : defaultValue);
     shortOptMap[shortOptName] = options.size();
 #if __cplusplus >= 201103L
     options.emplace_back(OptionItem(shortOptName, "", optType, description, metavar, dv));
@@ -591,7 +591,7 @@ public:
       const std::string& metavar=DEFAULT_METAVAR,
       const std::string& defaultValue="")
   {
-    const std::string& dv = ((optType == OptionType::NO_ARGUMENT && defaultValue.empty()) ? STRING_FALSE : defaultValue);
+    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? STRING_FALSE : defaultValue);
     longOptMap[longOptName] = options.size();
 #if __cplusplus >= 201103L
     options.emplace_back(OptionItem(-1, longOptName, optType, description, metavar, dv));
@@ -677,7 +677,7 @@ public:
       const std::string& longOptName,
       const std::string& description)
   {
-    add(shortOptName, longOptName, OptionType::NO_ARGUMENT, description, "", STRING_FALSE);
+    add(shortOptName, longOptName, OptionType::kNoArgument, description, "", STRING_FALSE);
   }
 
   /*!
@@ -690,7 +690,7 @@ public:
       int shortOptName,
       const std::string& description)
   {
-    add(shortOptName, OptionType::NO_ARGUMENT, description, "", STRING_FALSE);
+    add(shortOptName, OptionType::kNoArgument, description, "", STRING_FALSE);
   }
 
   /*!
@@ -703,7 +703,7 @@ public:
       const std::string& longOptName,
       const std::string& description)
   {
-    add(longOptName, OptionType::NO_ARGUMENT, description, "", STRING_FALSE);
+    add(longOptName, OptionType::kNoArgument, description, "", STRING_FALSE);
   }
 
   /*!
