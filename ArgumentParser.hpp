@@ -6,6 +6,7 @@
 #ifndef ARGUMENT_PARSER_HPP
 #define ARGUMENT_PARSER_HPP  //!< Include guard
 
+#include <cassert>
 #include <iostream>
 #include <exception>
 #include <functional>
@@ -351,7 +352,8 @@ private:
           return idx;
         }
       default:
-        return -1;
+        assert(0);
+        return static_cast<std::vector<std::string>::size_type>(-1);
     }
   }
 
@@ -974,7 +976,7 @@ public:
       std::basic_ostream<CharT, Traits>& os,
       const ArgumentParser& this_)
   {
-    showUsage(os);
+    this_.showUsage(os);
     return os;
   }
 
@@ -990,7 +992,7 @@ public:
   friend std::basic_istream<CharT, Traits>&
   operator>>(
       std::basic_istream<CharT, Traits>& is,
-      ArgumentParser& this_)
+      ArgumentParser&)
   {
     return is;
   }

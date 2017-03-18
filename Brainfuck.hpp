@@ -294,7 +294,7 @@ public:
   void
   compileToIR() BRAINFUCK_NOEXCEPT
   {
-    std::stack<unsigned int> loopStack;
+    std::stack<int> loopStack;
     ircode.clear();
     for (std::string::size_type pc = 0; pc < bfSource.size(); pc++) {
       switch (bfSource[pc]) {
@@ -414,7 +414,7 @@ public:
           ircode.emplace_back(BfInst(BfInst::Type::kGetchar));
           break;
         case '[':
-          loopStack.push(static_cast<unsigned int>(ircode.size()));
+          loopStack.push(static_cast<int>(ircode.size()));
           ircode.emplace_back(BfInst(BfInst::Type::kLoopStart));
           break;
         case ']':
@@ -480,7 +480,7 @@ public:
               }
             }
             if (isNormalLoopEnd) {
-              ircode[loopStack.top()].op1 = static_cast<int>(ircode.size());
+              ircode[static_cast<std::size_t>(loopStack.top())].op1 = static_cast<int>(ircode.size());
               ircode.emplace_back(BfInst(BfInst::Type::kLoopEnd, loopStack.top()));
             }
             loopStack.pop();
@@ -532,11 +532,11 @@ public:
           hp--;
           break;
         case '.':
-          std::cout.put(heap[hp]);
+          std::cout.put(static_cast<char>(heap[hp]));
           break;
         case ',':
           std::cout.flush();
-          heap[hp] = static_cast<char>(std::cin.get());
+          heap[hp] = static_cast<unsigned char>(std::cin.get());
           break;
         case '[':
           if (heap[hp] == 0) {
@@ -593,10 +593,10 @@ public:
           hp--;
           break;
         case BfInst::Type::kNextN:
-          hp += ircode[pc].op1;
+          hp = hp + static_cast<std::size_t>(ircode[pc].op1);
           break;
         case BfInst::Type::kPrevN:
-          hp -= ircode[pc].op1;
+          hp = hp - static_cast<std::size_t>(ircode[pc].op1);
           break;
         case BfInst::Type::kInc:
           heap[hp]++;
@@ -611,19 +611,19 @@ public:
           heap[hp] = static_cast<unsigned char>(heap[hp] - ircode[pc].op1);
           break;
         case BfInst::Type::kIncAt:
-          heap[hp + ircode[pc].op1]++;
+          heap[hp + static_cast<std::size_t>(ircode[pc].op1)]++;
           break;
         case BfInst::Type::kDecAt:
-          heap[hp + ircode[pc].op1]--;
+          heap[hp + static_cast<std::size_t>(ircode[pc].op1)]--;
           break;
         case BfInst::Type::kAddAt:
-          heap[hp + ircode[pc].op1] = static_cast<unsigned char>(heap[hp + ircode[pc].op1] + ircode[pc].op2);
+          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + ircode[pc].op2);
           break;
         case BfInst::Type::kSubAt:
-          heap[hp + ircode[pc].op1] = static_cast<unsigned char>(heap[hp + ircode[pc].op1] - ircode[pc].op2);
+          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] - ircode[pc].op2);
           break;
         case BfInst::Type::kPutchar:
-          std::cout.put(heap[hp]);
+          std::cout.put(static_cast<char>(heap[hp]));
           break;
         case BfInst::Type::kGetchar:
           std::cout.flush();
@@ -631,12 +631,12 @@ public:
           break;
         case BfInst::Type::kLoopStart:
           if (heap[hp] == 0) {
-            pc = ircode[pc].op1;
+            pc = static_cast<std::size_t>(ircode[pc].op1);
           }
           break;
         case BfInst::Type::kLoopEnd:
           if (heap[hp] != 0) {
-            pc = ircode[pc].op1;
+            pc = static_cast<std::size_t>(ircode[pc].op1);
           }
           break;
         case BfInst::Type::kAssignZero:
@@ -646,11 +646,11 @@ public:
           heap[hp] = static_cast<unsigned char>(ircode[pc].op1);
           break;
         case BfInst::Type::kAssignAt:
-          heap[hp + ircode[pc].op1] = static_cast<unsigned char>(ircode[pc].op2);
+          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(ircode[pc].op2);
           break;
         case BfInst::Type::kSearchZero:
           {
-            int offset = ircode[pc].op1;
+            std::size_t offset = static_cast<std::size_t>(ircode[pc].op1);
             while (heap[hp]) {
               hp += offset;
             }
@@ -658,19 +658,19 @@ public:
           break;
         case BfInst::Type::kAddVar:
           if (heap[hp]) {
-            heap[hp + ircode[pc].op1] = static_cast<unsigned char>(heap[hp + ircode[pc].op1] + heap[hp]);
+            heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp]);
             heap[hp] = 0;
           }
           break;
         case BfInst::Type::kSubVar:
           if (heap[hp]) {
-            heap[hp + ircode[pc].op1] = static_cast<unsigned char>(heap[hp + ircode[pc].op1] - heap[hp]);
+            heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] - heap[hp]);
             heap[hp] = 0;
           }
           break;
         case BfInst::Type::kCMulVar:
           if (heap[hp]) {
-            heap[hp + ircode[pc].op1] = static_cast<unsigned char>(heap[hp + ircode[pc].op1] + heap[hp] * ircode[pc].op2);
+            heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp] * ircode[pc].op2);
             heap[hp] = 0;
           }
           break;

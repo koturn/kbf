@@ -1,4 +1,6 @@
 language: cpp
 compiler: gcc
-script: make CXX=$CXX && make test
+install:
+  - if [ "$CXX" = 'g++' ]; then export CXX='g++ -std=gnu++14'; fi
+script: make CXX="$CXX" && make test
 sudo: false
