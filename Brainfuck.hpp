@@ -6,6 +6,7 @@
 #ifndef BRAINFUCK_HPP
 #define BRAINFUCK_HPP
 
+#include <cstdio>
 #include <cassert>
 #include <algorithm>
 #include <exception>
@@ -15,6 +16,11 @@
 #include <stack>
 #include <string>
 #include <vector>
+
+#if !defined(XBYAK_NO_OP_NAMES) && defined(__GNUC__)
+#  define XBYAK_NO_OP_NAMES
+#endif
+#include <xbyak/xbyak.h>
 
 #include "BfInst.h"
 
@@ -26,6 +32,14 @@
 //! Polyfill macro of @code noexcept @endcode
 #  define BRAINFUCK_NOEXCEPT  throw()
 #endif  // __cplusplus >= 201103L
+
+
+static int
+getcharWithFlush() BRAINFUCK_NOEXCEPT
+{
+  std::fflush(stdout);
+  return std::getchar();
+}
 
 
 /*!
@@ -40,7 +54,7 @@ public:
    */
   enum class CompileType
   {
-    kIR, kUnknown
+    kIR, kJit, kUnknown
   };  // enum class CompileType
 #else
   /*!
@@ -79,14 +93,44 @@ public:
 #endif  // __cplusplus >= 201103L
 
 private:
+  #if __cplusplus >= 201103L
+  enum class XbyakDirection
+  {
+    B, F
+  };  // enum class XbyakDirection
+#else
+  class XbyakDirection
+  {
+  public:
+    enum XbyakDirectionEnum
+    {
+      B, F
+    };
+    XbyakDirection(XbyakDirectionEnum value) :
+      value(value)
+    {}
+    operator XbyakDirectionEnum() const throw()
+    {
+      return value;
+    }
+  private:
+    XbyakDirectionEnum value;
+  };  // class XbyakDirection
+#endif  // __cplusplus >= 201103L
+
+
   //! Brainfuck characters: +-><.,[]
   static const std::string kBrainfuckCharacters;
   //! Default eap size
   static const std::size_t kDefaultHeapSize;
+  //! Default code generator size
+  static const std::size_t kDefaultXbyakCodeGeneratorSize;
   //! Brainfuck source code
   std::string bfSource;
   //! IR code
   std::vector<BfInst> ircode;
+  //! Native code generator
+  Xbyak::CodeGenerator cg;
   //! Internal compile state
   CompileType state;
 
@@ -180,6 +224,18 @@ private:
     return value;
   }
 
+  /*!
+   * @brief Convert label to string
+   * @param [in] labelNo  Label Number
+   * @param [in] dir      Direction (Backword or Forward)
+   * @return Label in string format
+   */
+  inline static std::string
+  toXbyakLabelString(int labelNo, XbyakDirection dir)
+  {
+    return Xbyak::Label::toStr(labelNo) + (dir == XbyakDirection::B ? 'B' : 'F');
+  }
+
 
 public:
   /*!
@@ -188,6 +244,7 @@ public:
   Brainfuck() :
     bfSource(""),
     ircode(),
+    cg(kDefaultXbyakCodeGeneratorSize),
     state(CompileType::kUnknown)
   {}
 
@@ -197,6 +254,7 @@ public:
   Brainfuck(const Brainfuck& that) :
     bfSource(that.bfSource),
     ircode(that.ircode),
+    cg(kDefaultXbyakCodeGeneratorSize),
     state(CompileType::kUnknown)
   {}
 
@@ -249,6 +307,7 @@ public:
   load(std::istream& is) BRAINFUCK_NOEXCEPT
   {
     bfSource = std::string((std::istreambuf_iterator<char>(is)), std::istreambuf_iterator<char>());
+    state = CompileType::kUnknown;
   }
 
   /*!
@@ -259,6 +318,7 @@ public:
   loadSource(const std::string& bfSource) BRAINFUCK_NOEXCEPT
   {
     this->bfSource = bfSource;
+    state = CompileType::kUnknown;
   }
 
   /*!
@@ -284,7 +344,15 @@ public:
   void
   compile(CompileType ct=CompileType::kIR) BRAINFUCK_NOEXCEPT
   {
-    compileToIR();
+    switch (ct) {
+      case CompileType::kIR:
+        compileToIR();
+        break;
+      case CompileType::kJit:
+        compileToIR();
+        compileToNative();
+        break;
+    }
     state = ct;
   }
 
@@ -490,6 +558,265 @@ public:
     }
   }
 
+  void
+  compileToNative() BRAINFUCK_NOEXCEPT
+  {
+#ifdef XBYAK32
+    const Xbyak::Reg32& pPutchar(cg.esi);
+    const Xbyak::Reg32& pGetchar(cg.edi);
+    const Xbyak::Reg32& stack(cg.ebp);
+    const Xbyak::Address cur = Xbyak::util::dword[stack];
+    cg.push(cg.ebp);  // stack
+    cg.push(cg.esi);
+    cg.push(cg.edi);
+    const int P_ = 4 * 3;
+    cg.mov(pPutchar, Xbyak::util::ptr[cg.esp + P_ + 4]);  // putchar
+    cg.mov(pGetchar, Xbyak::util::ptr[cg.esp + P_ + 8]);  // getchar
+    cg.mov(stack, Xbyak::util::ptr[cg.esp + P_ + 12]);  // stack
+#elif defined(XBYAK64_WIN)
+    const Xbyak::Reg64& pPutchar(cg.rsi);
+    const Xbyak::Reg64& pGetchar(cg.rdi);
+    const Xbyak::Reg64& stack(cg.rbp);  // stack
+    const Xbyak::Address cur = Xbyak::util::dword[stack];
+    cg.push(cg.rsi);
+    cg.push(cg.rdi);
+    cg.push(cg.rbp);
+    cg.mov(pPutchar, cg.rcx);  // putchar
+    cg.mov(pGetchar, cg.rdx);  // getchar
+    cg.mov(stack, cg.r8);  // stack
+#else
+    const Xbyak::Reg64& pPutchar(cg.rbx);
+    const Xbyak::Reg64& pGetchar(cg.rbp);
+    const Xbyak::Reg64& stack(cg.r12);  // stack
+    const Xbyak::Address cur = Xbyak::util::dword[stack];
+    cg.push(cg.rbx);
+    cg.push(cg.rbp);
+    cg.push(cg.r12);
+    cg.mov(pPutchar, cg.rdi);  // putchar
+    cg.mov(pGetchar, cg.rsi);  // getchar
+    cg.mov(stack, cg.rdx);  // stack
+#endif  // XBYAK32
+    int labelNo = 0;
+    std::stack<int> keepLabelNo;
+    for (const auto& inst : ircode) {
+      switch (inst.type) {
+        case BfInst::Type::kNext:
+          cg.add(stack, 4);
+          break;
+        case BfInst::Type::kPrev:
+          cg.sub(stack, 4);
+          break;
+        case BfInst::Type::kNextN:
+          cg.add(stack, 4 * inst.op1);
+          break;
+        case BfInst::Type::kPrevN:
+          cg.sub(stack, 4 * inst.op1);
+          break;
+        case BfInst::Type::kInc:
+          cg.inc(cur);
+          break;
+        case BfInst::Type::kDec:
+          cg.dec(cur);
+          break;
+        case BfInst::Type::kAdd:
+          cg.add(cur, inst.op1);
+          break;
+        case BfInst::Type::kSub:
+          cg.sub(cur, inst.op1);
+          break;
+        case BfInst::Type::kIncAt:
+          cg.add(stack, 4 * inst.op1);
+          cg.inc(cur);
+          cg.sub(stack, 4 * inst.op1);
+          break;
+        case BfInst::Type::kDecAt:
+          cg.add(stack, 4 * inst.op1);
+          cg.dec(cur);
+          cg.sub(stack, 4 * inst.op1);
+          break;
+        case BfInst::Type::kAddAt:
+          cg.add(stack, 4 * inst.op1);
+          cg.add(cur, inst.op2);
+          cg.sub(stack, 4 * inst.op1);
+          break;
+        case BfInst::Type::kSubAt:
+          cg.add(stack, 4 * inst.op1);
+          cg.sub(cur, inst.op2);
+          cg.sub(stack, 4 * inst.op1);
+          break;
+        case BfInst::Type::kPutchar:
+#ifdef XBYAK32
+          cg.push(cur);
+          cg.call(pPutchar);
+          cg.pop(cg.eax);
+#elif defined(XBYAK64_WIN)
+          cg.mov(cg.rcx, cur);
+          cg.sub(cg.rsp, 32);
+          cg.call(pPutchar);
+          cg.add(cg.rsp, 32);
+#else
+          cg.mov(cg.rdi, cur);
+          cg.call(pPutchar);
+#endif  // XBYAK32
+          break;
+        case BfInst::Type::kGetchar:
+#if defined(XBYAK32) || defined(XBYAK64_GCC)
+          cg.call(pGetchar);
+          cg.mov(cur, cg.eax);
+#elif defined(XBYAK64_WIN)
+          cg.sub(cg.rsp, 32);
+          cg.call(pGetchar);
+          cg.add(cg.rsp, 32);
+          cg.mov(cur, cg.rax);
+#endif  // defined(XBYAK32) || defined(XBYAK64_GCC)
+          break;
+        case BfInst::Type::kLoopStart:
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          cg.mov(cg.eax, cur);
+          cg.test(cg.eax, cg.eax);
+          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
+          keepLabelNo.push(labelNo++);
+          break;
+        case BfInst::Type::kLoopEnd:
+          {
+            int no = keepLabelNo.top();
+            keepLabelNo.pop();
+            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
+            cg.L(toXbyakLabelString(no, XbyakDirection::F));
+          }
+          break;
+        case BfInst::Type::kAssignZero:
+          cg.mov(cur, 0);
+          break;
+        case BfInst::Type::kAssign:
+          cg.mov(cur, inst.op1);
+          break;
+        case BfInst::Type::kAssignAt:
+          cg.add(stack, 4 * inst.op1);
+          cg.mov(cur, inst.op2);
+          cg.sub(stack, 4 * inst.op1);
+          break;
+        case BfInst::Type::kSearchZero:
+          // kLoopStart
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          cg.mov(cg.eax, cur);
+          cg.test(cg.eax, cg.eax);
+          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
+          keepLabelNo.push(labelNo++);
+          // kNextN / kPrevN
+          cg.add(stack, 4 * inst.op1);
+          // kLoopEnd
+          {
+            int no = keepLabelNo.top();
+            keepLabelNo.pop();
+            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
+            cg.L(toXbyakLabelString(no, XbyakDirection::F));
+          }
+          break;
+        case BfInst::Type::kAddVar:
+          // kLoopStart
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          cg.mov(cg.eax, cur);
+          cg.test(cg.eax, cg.eax);
+          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
+          keepLabelNo.push(labelNo++);
+          // kSub
+          cg.dec(cur);
+          // kNextN
+          cg.add(stack, 4 * inst.op1);
+          // ADD
+          cg.inc(cur);
+          // kPrevN
+          cg.sub(stack, 4 * inst.op1);
+          // kLoopEnd
+          {
+            int no = keepLabelNo.top();
+            keepLabelNo.pop();
+            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
+            cg.L(toXbyakLabelString(no, XbyakDirection::F));
+          }
+          break;
+        case BfInst::Type::kSubVar:
+          // kLoopStart
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          cg.mov(cg.eax, cur);
+          cg.test(cg.eax, cg.eax);
+          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
+          keepLabelNo.push(labelNo++);
+          // kSub
+          cg.dec(cur);
+          // kNextN
+          cg.add(stack, 4 * inst.op1);
+          // kSub
+          cg.dec(cur);
+          // kPrevN
+          cg.sub(stack, 4 * inst.op1);
+          // kLoopEnd
+          {
+            int no = keepLabelNo.top();
+            keepLabelNo.pop();
+            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
+            cg.L(toXbyakLabelString(no, XbyakDirection::F));
+          }
+          break;
+        case BfInst::Type::kCMulVar:
+          // kLoopStart
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          cg.mov(cg.eax, cur);
+          cg.test(cg.eax, cg.eax);
+          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
+          keepLabelNo.push(labelNo++);
+          // kDec
+          cg.dec(cur);
+          // kNextN
+          cg.add(stack, 4 * inst.op1);
+          // kAdd
+          cg.add(cur, inst.op2);
+          // kPrevN
+          cg.sub(stack, 4 * inst.op1);
+          // kLoopEnd
+          {
+            int no = keepLabelNo.top();
+            keepLabelNo.pop();
+            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
+            cg.L(toXbyakLabelString(no, XbyakDirection::F));
+          }
+          break;
+        case BfInst::Type::kInfLoop:
+          // kLoopStart
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          cg.mov(cg.eax, cur);
+          cg.test(cg.eax, cg.eax);
+          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
+          keepLabelNo.push(labelNo++);
+          // kLoopEnd
+          {
+            int no = keepLabelNo.top();
+            keepLabelNo.pop();
+            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
+            cg.L(toXbyakLabelString(no, XbyakDirection::F));
+          }
+          break;
+        default:
+          assert(false);
+      }
+    }
+#ifdef XBYAK32
+    cg.pop(cg.edi);
+    cg.pop(cg.esi);
+    cg.pop(cg.ebp);
+#elif defined(XBYAK64_WIN)
+    cg.pop(cg.rbp);
+    cg.pop(cg.rdi);
+    cg.pop(cg.rsi);
+#else
+    cg.pop(cg.r12);
+    cg.pop(cg.rbp);
+    cg.pop(cg.rbx);
+#endif  // XBYAK32
+    cg.ret();
+  }
+
   /*!
    * @brief Execute brainfuck
    * @param [in] heapSize  Heap size for execution
@@ -502,6 +829,9 @@ public:
     switch (state) {
       case CompileType::kIR:
         executeIR(heap.get());
+        break;
+      case CompileType::kJit:
+        executeJit(heap.get());
         break;
       case CompileType::kUnknown:
         execute(heap.get());
@@ -687,6 +1017,17 @@ public:
     std::cout.flush();
   }
 
+  void
+  executeJit(unsigned char* heap) const BRAINFUCK_NOEXCEPT
+  {
+    std::unique_ptr<int[]> xbyakRtStack(new int[65536 * 4]);
+    std::fill_n(xbyakRtStack.get(), 65536, 0);
+    cg.getCode<void (*)(int (*)(int), int (*)(), int *)>()
+      (std::putchar, getcharWithFlush, xbyakRtStack.get());
+    std::putchar('\n');
+    std::fflush(stdout);
+  }
+
   /*!
    * @brief Dump IR code (Debug function)
    */
@@ -816,6 +1157,7 @@ public:
 
 const std::string Brainfuck::kBrainfuckCharacters = "+-><.,[]";
 const std::size_t Brainfuck::kDefaultHeapSize = 65536;
+const std::size_t Brainfuck::kDefaultXbyakCodeGeneratorSize = 1048576;
 
 
 #endif  // BRAINFUCK_HPP

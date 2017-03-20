@@ -6,6 +6,7 @@ endif
 
 BRAINFUCK := $(addsuffix $(BIN_SUFFIX),../brainfuck)
 TESTS := $(basename $(sort $(wildcard *.b)))
+OPT_LEVELS := 0 1 2
 INPUTS_DIR := inputs
 EXPECTS_DIR := expects
 MAKE := make
@@ -32,6 +33,6 @@ all: $(BRAINFUCK) interpreter
 $(BRAINFUCK):
 	$(MAKE) -C ../
 
-interpreter: $(foreach OPT_LEVEL,0 1,$(foreach TEST,$(TESTS),interpreter$(OPT_LEVEL)_$(TEST)))
+interpreter: $(foreach OPT_LEVEL,$(OPT_LEVELS),$(foreach TEST,$(TESTS),interpreter$(OPT_LEVEL)_$(TEST)))
 
-$(foreach OPT_LEVEL,0 1,$(foreach TEST,$(TESTS),$(eval $(call generate-interpreter-test,interpreter$(OPT_LEVEL)_$(TEST),$(TEST),$(OPT_LEVEL)))))
+$(foreach OPT_LEVEL,$(OPT_LEVELS),$(foreach TEST,$(TESTS),$(eval $(call generate-interpreter-test,interpreter$(OPT_LEVEL)_$(TEST),$(TEST),$(OPT_LEVEL)))))

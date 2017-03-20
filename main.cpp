@@ -13,6 +13,7 @@ main(int argc, const char* argv[])
     ArgumentParser ap(argv[0]);
     ap.add('h', "help", "Show help and exit this program");
     ap.add('O', "optimize", ArgumentParser::OptionType::kRequiredArgument, "Specify optimization level", "LEVEL", 1);
+    ap.add("dump-ir", "Dump IR code");
     ap.add("enable-synchronize-with-stdio", "Disable synchronization between std::cout/std::cin and <cstdio>");
     ap.add("heap-size", ArgumentParser::OptionType::kRequiredArgument, "Specify heap memory size", "HEAP_SIZE", 65536);
     ap.add("use-stack-memory", "Use stack memory for execution");
@@ -36,16 +37,28 @@ main(int argc, const char* argv[])
     }
 
     Brainfuck bf;
-    if (optLevel < 1) {
+    if (ap.get<bool>("dump-ir")) {
+      for (const auto& filename : args) {
+        bf.load(filename);
+        bf.compile();
+        bf.dumpIR();
+      }
+    } else if (optLevel < 1) {
       for (const auto& filename : args) {
         bf.load(filename);
         bf.trim();
         bf.execute(heapSize);
       }
-    } else {
+    } else if (optLevel < 2) {
       for (const auto& filename : args) {
         bf.load(filename);
         bf.compile();
+        bf.execute(heapSize);
+      }
+    } else {
+      for (const auto& filename : args) {
+        bf.load(filename);
+        bf.compile(Brainfuck::CompileType::kJit);
         bf.execute(heapSize);
       }
     }
