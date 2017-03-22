@@ -493,8 +493,7 @@ public:
               ircode.pop_back();
               ircode.emplace_back(BfInst(BfInst::Type::kInfLoop));
               isNormalLoopEnd = false;
-            }
-            if (size > 1 && ircode[size - 2].type == BfInst::Type::kLoopStart) {
+            } else if (size > 1 && ircode[size - 2].type == BfInst::Type::kLoopStart) {
               BfInst inst = ircode[size - 1];
               if (inst.type == BfInst::Type::kInc || inst.type == BfInst::Type::kDec) {
                 ircode.pop_back(); ircode.pop_back();
@@ -519,26 +518,27 @@ public:
                 }
               }
               isNormalLoopEnd = false;
-            }
-            if (size > 2) {  // [->+<]
+            } else if (size > 2) {  // [->+<]
               BfInst inst1 = ircode[size - 1];  // >*(+|-)*<* ? or - ?
               BfInst inst2 = ircode[size - 2];  // - ? or >*(+|-)*<* ?
               BfInst inst3 = ircode[size - 3];  // [ ?
               if (inst3.type == BfInst::Type::kLoopStart &&
                   ((inst2.type == BfInst::Type::kDec && isOperationAt(inst1.type)) ||
                    (isOperationAt(inst2.type) && inst1.type == BfInst::Type::kDec))) {
-                ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
                 const BfInst& c = (inst2.type == BfInst::Type::kDec) ? inst1 : inst2;
                 switch (c.type) {
                   case BfInst::Type::kIncAt:
+                    ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
                     ircode.emplace_back(BfInst(BfInst::Type::kAddVar, c.op1));
                     isNormalLoopEnd = false;
                     break;
                   case BfInst::Type::kDecAt:
+                    ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
                     ircode.emplace_back(BfInst(BfInst::Type::kSubVar, c.op1));
                     isNormalLoopEnd = false;
                     break;
                   case BfInst::Type::kAddAt:
+                    ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
                     ircode.emplace_back(BfInst(BfInst::Type::kCMulVar, c.op1, c.op2));
                     isNormalLoopEnd = false;
                     break;
@@ -614,34 +614,42 @@ public:
           break;
         case BfInst::Type::kInc:
           cg.inc(cur);
+          cg.and_(cur, 0xff);
           break;
         case BfInst::Type::kDec:
           cg.dec(cur);
+          cg.and_(cur, 0xff);
           break;
         case BfInst::Type::kAdd:
           cg.add(cur, inst.op1);
+          cg.and_(cur, 0xff);
           break;
         case BfInst::Type::kSub:
           cg.sub(cur, inst.op1);
+          cg.and_(cur, 0xff);
           break;
         case BfInst::Type::kIncAt:
           cg.add(stack, 4 * inst.op1);
           cg.inc(cur);
+          cg.and_(cur, 0xff);
           cg.sub(stack, 4 * inst.op1);
           break;
         case BfInst::Type::kDecAt:
           cg.add(stack, 4 * inst.op1);
           cg.dec(cur);
+          cg.and_(cur, 0xff);
           cg.sub(stack, 4 * inst.op1);
           break;
         case BfInst::Type::kAddAt:
           cg.add(stack, 4 * inst.op1);
           cg.add(cur, inst.op2);
+          cg.and_(cur, 0xff);
           cg.sub(stack, 4 * inst.op1);
           break;
         case BfInst::Type::kSubAt:
           cg.add(stack, 4 * inst.op1);
           cg.sub(cur, inst.op2);
+          cg.and_(cur, 0xff);
           cg.sub(stack, 4 * inst.op1);
           break;
         case BfInst::Type::kPutchar:
@@ -722,10 +730,12 @@ public:
           keepLabelNo.push(labelNo++);
           // kSub
           cg.dec(cur);
+          cg.and_(cur, 0xff);
           // kNextN
           cg.add(stack, 4 * inst.op1);
           // ADD
           cg.inc(cur);
+          cg.and_(cur, 0xff);
           // kPrevN
           cg.sub(stack, 4 * inst.op1);
           // kLoopEnd
@@ -745,10 +755,12 @@ public:
           keepLabelNo.push(labelNo++);
           // kSub
           cg.dec(cur);
+          cg.and_(cur, 0xff);
           // kNextN
           cg.add(stack, 4 * inst.op1);
           // kSub
           cg.dec(cur);
+          cg.and_(cur, 0xff);
           // kPrevN
           cg.sub(stack, 4 * inst.op1);
           // kLoopEnd
@@ -768,10 +780,12 @@ public:
           keepLabelNo.push(labelNo++);
           // kDec
           cg.dec(cur);
+          cg.and_(cur, 0xff);
           // kNextN
           cg.add(stack, 4 * inst.op1);
           // kAdd
           cg.add(cur, inst.op2);
+          cg.and_(cur, 0xff);
           // kPrevN
           cg.sub(stack, 4 * inst.op1);
           // kLoopEnd
