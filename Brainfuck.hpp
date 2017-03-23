@@ -68,7 +68,7 @@ public:
      */
     enum CompileTypeEnum
     {
-      kIR, kUnknown
+      kIR, kJit, kUnknown
     };
     /*!
      * @brief Ctor for implicit conversion: Actual enum to dummy enum class
@@ -668,15 +668,8 @@ public:
 #endif  // XBYAK32
           break;
         case BfInst::Type::kGetchar:
-#if defined(XBYAK32) || defined(XBYAK64_GCC)
           cg.call(pGetchar);
           cg.mov(cur, cg.eax);
-#elif defined(XBYAK64_WIN)
-          cg.sub(cg.rsp, 32);
-          cg.call(pGetchar);
-          cg.add(cg.rsp, 32);
-          cg.mov(cur, cg.rax);
-#endif  // defined(XBYAK32) || defined(XBYAK64_GCC)
           break;
         case BfInst::Type::kLoopStart:
           cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
@@ -710,106 +703,73 @@ public:
           cg.mov(cg.eax, cur);
           cg.test(cg.eax, cg.eax);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
-          keepLabelNo.push(labelNo++);
           // kNextN / kPrevN
           cg.add(stack, 4 * inst.op1);
           // kLoopEnd
-          {
-            int no = keepLabelNo.top();
-            keepLabelNo.pop();
-            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
-            cg.L(toXbyakLabelString(no, XbyakDirection::F));
-          }
+          cg.jmp(toXbyakLabelString(labelNo, XbyakDirection::B));
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
+          labelNo++;
           break;
         case BfInst::Type::kAddVar:
-          // kLoopStart
-          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          // if (cur != 0)
           cg.mov(cg.eax, cur);
           cg.test(cg.eax, cg.eax);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
-          keepLabelNo.push(labelNo++);
-          // kSub
-          cg.dec(cur);
-          cg.and_(cur, 0xff);
-          // kNextN
+          // stack[inst.op1] += stack[0]
+          cg.mov(cg.eax, cur);
+          cg.mov(cur, 0);
           cg.add(stack, 4 * inst.op1);
-          // ADD
-          cg.inc(cur);
+          cg.add(cur, cg.eax);
           cg.and_(cur, 0xff);
-          // kPrevN
           cg.sub(stack, 4 * inst.op1);
-          // kLoopEnd
-          {
-            int no = keepLabelNo.top();
-            keepLabelNo.pop();
-            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
-            cg.L(toXbyakLabelString(no, XbyakDirection::F));
-          }
+          // endif
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
+          labelNo++;
           break;
         case BfInst::Type::kSubVar:
-          // kLoopStart
-          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          // if (cur != 0)
           cg.mov(cg.eax, cur);
           cg.test(cg.eax, cg.eax);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
-          keepLabelNo.push(labelNo++);
-          // kSub
-          cg.dec(cur);
-          cg.and_(cur, 0xff);
-          // kNextN
+          // stack[inst.op1] -= stack[0]
+          cg.mov(cg.eax, cur);
+          cg.mov(cur, 0);
           cg.add(stack, 4 * inst.op1);
-          // kSub
-          cg.dec(cur);
+          cg.sub(cur, cg.eax);
           cg.and_(cur, 0xff);
-          // kPrevN
           cg.sub(stack, 4 * inst.op1);
-          // kLoopEnd
-          {
-            int no = keepLabelNo.top();
-            keepLabelNo.pop();
-            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
-            cg.L(toXbyakLabelString(no, XbyakDirection::F));
-          }
+          // endif
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
+          labelNo++;
           break;
         case BfInst::Type::kCMulVar:
-          // kLoopStart
-          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          // if (cur != 0)
           cg.mov(cg.eax, cur);
           cg.test(cg.eax, cg.eax);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
-          keepLabelNo.push(labelNo++);
-          // kDec
-          cg.dec(cur);
-          cg.and_(cur, 0xff);
-          // kNextN
+          // stack[inst.op1] += stack[0] * inst.op2
+          cg.mov(cg.eax, inst.op2);
+          cg.mul(cur);
+          cg.mov(cur, 0);
           cg.add(stack, 4 * inst.op1);
-          // kAdd
-          cg.add(cur, inst.op2);
+          cg.add(cur, cg.eax);
           cg.and_(cur, 0xff);
-          // kPrevN
           cg.sub(stack, 4 * inst.op1);
-          // kLoopEnd
-          {
-            int no = keepLabelNo.top();
-            keepLabelNo.pop();
-            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
-            cg.L(toXbyakLabelString(no, XbyakDirection::F));
-          }
+          // endif
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
+          labelNo++;
           break;
         case BfInst::Type::kInfLoop:
-          // kLoopStart
-          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          // if (cur != 0)
           cg.mov(cg.eax, cur);
           cg.test(cg.eax, cg.eax);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
-          keepLabelNo.push(labelNo++);
-          // kLoopEnd
-          {
-            int no = keepLabelNo.top();
-            keepLabelNo.pop();
-            cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
-            cg.L(toXbyakLabelString(no, XbyakDirection::F));
-          }
+          // infinite loop
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
+          cg.jmp(toXbyakLabelString(labelNo, XbyakDirection::B));
+          // endif
+          cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
+          labelNo++;
           break;
         default:
           assert(false);
