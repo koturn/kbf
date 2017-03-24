@@ -565,7 +565,7 @@ public:
     const Xbyak::Reg32& pPutchar(cg.esi);
     const Xbyak::Reg32& pGetchar(cg.edi);
     const Xbyak::Reg32& stack(cg.ebp);
-    const Xbyak::Address cur = Xbyak::util::dword[stack];
+    const Xbyak::Address cur = Xbyak::util::byte[stack];
     cg.push(cg.ebp);  // stack
     cg.push(cg.esi);
     cg.push(cg.edi);
@@ -577,7 +577,7 @@ public:
     const Xbyak::Reg64& pPutchar(cg.rsi);
     const Xbyak::Reg64& pGetchar(cg.rdi);
     const Xbyak::Reg64& stack(cg.rbp);  // stack
-    const Xbyak::Address cur = Xbyak::util::dword[stack];
+    const Xbyak::Address cur = Xbyak::util::byte[stack];
     cg.push(cg.rsi);
     cg.push(cg.rdi);
     cg.push(cg.rbp);
@@ -588,7 +588,7 @@ public:
     const Xbyak::Reg64& pPutchar(cg.rbx);
     const Xbyak::Reg64& pGetchar(cg.rbp);
     const Xbyak::Reg64& stack(cg.r12);  // stack
-    const Xbyak::Address cur = Xbyak::util::dword[stack];
+    const Xbyak::Address cur = Xbyak::util::byte[stack];
     cg.push(cg.rbx);
     cg.push(cg.rbp);
     cg.push(cg.r12);
@@ -601,56 +601,48 @@ public:
     for (const auto& inst : ircode) {
       switch (inst.type) {
         case BfInst::Type::kNext:
-          cg.add(stack, 4);
+          cg.inc(stack);
           break;
         case BfInst::Type::kPrev:
-          cg.sub(stack, 4);
+          cg.dec(stack);
           break;
         case BfInst::Type::kNextN:
-          cg.add(stack, 4 * inst.op1);
+          cg.add(stack, inst.op1);
           break;
         case BfInst::Type::kPrevN:
-          cg.sub(stack, 4 * inst.op1);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kInc:
           cg.inc(cur);
-          cg.and_(cur, 0xff);
           break;
         case BfInst::Type::kDec:
           cg.dec(cur);
-          cg.and_(cur, 0xff);
           break;
         case BfInst::Type::kAdd:
           cg.add(cur, inst.op1);
-          cg.and_(cur, 0xff);
           break;
         case BfInst::Type::kSub:
           cg.sub(cur, inst.op1);
-          cg.and_(cur, 0xff);
           break;
         case BfInst::Type::kIncAt:
-          cg.add(stack, 4 * inst.op1);
+          cg.add(stack, inst.op1);
           cg.inc(cur);
-          cg.and_(cur, 0xff);
-          cg.sub(stack, 4 * inst.op1);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kDecAt:
-          cg.add(stack, 4 * inst.op1);
+          cg.add(stack, inst.op1);
           cg.dec(cur);
-          cg.and_(cur, 0xff);
-          cg.sub(stack, 4 * inst.op1);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kAddAt:
-          cg.add(stack, 4 * inst.op1);
+          cg.add(stack, inst.op1);
           cg.add(cur, inst.op2);
-          cg.and_(cur, 0xff);
-          cg.sub(stack, 4 * inst.op1);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kSubAt:
-          cg.add(stack, 4 * inst.op1);
+          cg.add(stack, inst.op1);
           cg.sub(cur, inst.op2);
-          cg.and_(cur, 0xff);
-          cg.sub(stack, 4 * inst.op1);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kPutchar:
 #ifdef XBYAK32
@@ -668,13 +660,19 @@ public:
 #endif  // XBYAK32
           break;
         case BfInst::Type::kGetchar:
+#ifdef XBYAK64_WIN
+          cg.sub(cg.rsp, 32);
+#endif  // XBYAK64_WIN
           cg.call(pGetchar);
-          cg.mov(cur, cg.eax);
+#ifdef XBYAK64_WIN
+          cg.add(cg.rsp, 32);
+#endif  // XBYAK64_WIN
+          cg.mov(cur, cg.al);
           break;
         case BfInst::Type::kLoopStart:
           cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
-          cg.mov(cg.eax, cur);
-          cg.test(cg.eax, cg.eax);
+          cg.mov(cg.al, cur);
+          cg.test(cg.al, cg.al);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
           keepLabelNo.push(labelNo++);
           break;
@@ -693,76 +691,49 @@ public:
           cg.mov(cur, inst.op1);
           break;
         case BfInst::Type::kAssignAt:
-          cg.add(stack, 4 * inst.op1);
+          cg.add(stack, inst.op1);
           cg.mov(cur, inst.op2);
-          cg.sub(stack, 4 * inst.op1);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kSearchZero:
           // kLoopStart
           cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
-          cg.mov(cg.eax, cur);
-          cg.test(cg.eax, cg.eax);
+          cg.mov(cg.al, cur);
+          cg.test(cg.al, cg.al);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
           // kNextN / kPrevN
-          cg.add(stack, 4 * inst.op1);
+          cg.add(stack, inst.op1);
           // kLoopEnd
           cg.jmp(toXbyakLabelString(labelNo, XbyakDirection::B));
           cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
           labelNo++;
           break;
         case BfInst::Type::kAddVar:
-          // if (cur != 0)
-          cg.mov(cg.eax, cur);
-          cg.test(cg.eax, cg.eax);
-          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
-          // stack[inst.op1] += stack[0]
-          cg.mov(cg.eax, cur);
+          cg.mov(cg.al, cur);
           cg.mov(cur, 0);
-          cg.add(stack, 4 * inst.op1);
-          cg.add(cur, cg.eax);
-          cg.and_(cur, 0xff);
-          cg.sub(stack, 4 * inst.op1);
-          // endif
-          cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
-          labelNo++;
+          cg.add(stack, inst.op1);
+          cg.add(cur, cg.al);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kSubVar:
-          // if (cur != 0)
-          cg.mov(cg.eax, cur);
-          cg.test(cg.eax, cg.eax);
-          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
-          // stack[inst.op1] -= stack[0]
-          cg.mov(cg.eax, cur);
+          cg.mov(cg.al, cur);
           cg.mov(cur, 0);
-          cg.add(stack, 4 * inst.op1);
-          cg.sub(cur, cg.eax);
-          cg.and_(cur, 0xff);
-          cg.sub(stack, 4 * inst.op1);
-          // endif
-          cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
-          labelNo++;
+          cg.add(stack, inst.op1);
+          cg.sub(cur, cg.al);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kCMulVar:
-          // if (cur != 0)
-          cg.mov(cg.eax, cur);
-          cg.test(cg.eax, cg.eax);
-          cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
-          // stack[inst.op1] += stack[0] * inst.op2
-          cg.mov(cg.eax, inst.op2);
+          cg.mov(cg.al, inst.op2);
           cg.mul(cur);
           cg.mov(cur, 0);
-          cg.add(stack, 4 * inst.op1);
-          cg.add(cur, cg.eax);
-          cg.and_(cur, 0xff);
-          cg.sub(stack, 4 * inst.op1);
-          // endif
-          cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
-          labelNo++;
+          cg.add(stack, inst.op1);
+          cg.add(cur, cg.al);
+          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kInfLoop:
           // if (cur != 0)
-          cg.mov(cg.eax, cur);
-          cg.test(cg.eax, cg.eax);
+          cg.mov(cg.al, cur);
+          cg.test(cg.al, cg.al);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
           // infinite loop
           cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
@@ -776,14 +747,23 @@ public:
       }
     }
 #ifdef XBYAK32
+    cg.push('\n');
+    cg.call(pPutchar);
+    cg.pop(cg.eax);
     cg.pop(cg.edi);
     cg.pop(cg.esi);
     cg.pop(cg.ebp);
 #elif defined(XBYAK64_WIN)
+    cg.mov(cg.rcx, '\n');
+    cg.sub(cg.rsp, 32);
+    cg.call(pPutchar);
+    cg.add(cg.rsp, 32);
     cg.pop(cg.rbp);
     cg.pop(cg.rdi);
     cg.pop(cg.rsi);
 #else
+    cg.mov(cg.rdi, '\n');
+    cg.call(pPutchar);
     cg.pop(cg.r12);
     cg.pop(cg.rbp);
     cg.pop(cg.rbx);
@@ -994,12 +974,8 @@ public:
   void
   executeJit(unsigned char* heap) const BRAINFUCK_NOEXCEPT
   {
-    std::unique_ptr<int[]> xbyakRtStack(new int[65536 * 4]);
-    std::fill_n(xbyakRtStack.get(), 65536, 0);
-    cg.getCode<void (*)(int (*)(int), int (*)(), int *)>()
-      (std::putchar, getcharWithFlush, xbyakRtStack.get());
-    std::putchar('\n');
-    std::fflush(stdout);
+    cg.getCode<void (*)(int (*)(int), int (*)(), unsigned char*)>()
+      (std::putchar, getcharWithFlush, heap);
   }
 
   /*!
