@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <exception>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <stack>
@@ -23,7 +24,6 @@
 #include <xbyak/xbyak.h>
 
 #include "BfInst.h"
-
 
 #if __cplusplus >= 201103L
 //! Polyfill macro of @code noexcept @endcode
@@ -976,6 +976,7 @@ public:
   {
     cg.getCode<void (*)(int (*)(int), int (*)(), unsigned char*)>()
       (std::putchar, getcharWithFlush, heap);
+    std::fflush(stdout);
   }
 
   /*!
@@ -1063,6 +1064,67 @@ public:
           break;
       }
     }
+  }
+
+  void
+  dumpXbyak() BRAINFUCK_NOEXCEPT
+  {
+    std::size_t size = cg.getSize();
+    if (size == 0) {
+      compile(CompileType::kJit);
+      size = cg.getSize();
+    }
+    const Xbyak::uint8* code = cg.getCode();
+
+    std::cout << "#include <stdio.h>\n"
+                 "#include <stdlib.h>\n"
+#if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
+                 "#ifndef WIN32_LEAN_AND_MEAN\n"
+                 "#  define WIN32_LEAN_AND_MEAN\n"
+                 "#  define WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+                 "#endif\n"
+                 "#include <windows.h>\n"
+                 "#ifdef WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+                 "#  undef WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+                 "#  undef WIN32_LEAN_AND_MEAN\n"
+                 "#endif\n"
+#elif defined(__linux__)
+                 "#include <unistd.h>\n"
+                 "#include <sys/mman.h>\n"
+#endif
+                 "\n"
+                 "static unsigned char stack[65536];\n"
+                 "/* code size: " << size << " bytes */\n"
+                 "static unsigned char code[] = {\n"
+              << std::hex << " ";
+    for (std::size_t i = 0; i < size; i++) {
+      std::cout << " 0x" << std::setfill('0') << std::setw(2) << static_cast<unsigned int>(code[i]) << ",";
+      if (i % 16 == 15) {
+        std::cout << "\n ";
+      }
+    }
+    std::cout << std::dec
+              << "\n};\n\n\n"
+                 "int\n"
+                 "main(void)\n"
+                 "{\n"
+#if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
+                 "  DWORD old_protect;\n"
+                 "  VirtualProtect((LPVOID) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
+#elif defined(__linux__)
+                 "  long page_size = sysconf(_SC_PAGESIZE) - 1;\n"
+                 "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
+#endif
+                 "  ((void (*)(int (*)(int), int (*)(), unsigned char *)) (unsigned char *) code)(putchar, getchar, stack);\n"
+                 "  return EXIT_SUCCESS;\n"
+                 "}"
+              << std::endl;
+  }
+
+  std::string
+  getSource() const BRAINFUCK_NOEXCEPT
+  {
+    return bfSource;
   }
 
   /*!

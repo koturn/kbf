@@ -12,7 +12,9 @@ main(int argc, const char* argv[])
   try {
     ArgumentParser ap(argv[0]);
     ap.add('h', "help", "Show help and exit this program");
+    ap.add('m', "minify", "Remove all non-brainfuck characters from source code");
     ap.add('O', "optimize", ArgumentParser::OptionType::kRequiredArgument, "Specify optimization level", "LEVEL", 1);
+    ap.add('t', "target", ArgumentParser::OptionType::kRequiredArgument, "Specify target language", "TARGET", "");
     ap.add("dump-ir", "Dump IR code");
     ap.add("enable-synchronize-with-stdio", "Disable synchronization between std::cout/std::cin and <cstdio>");
     ap.add("heap-size", ArgumentParser::OptionType::kRequiredArgument, "Specify heap memory size", "HEAP_SIZE", 65536);
@@ -37,6 +39,21 @@ main(int argc, const char* argv[])
     }
 
     Brainfuck bf;
+    if (ap.get<bool>("minify")) {
+      for (const auto& filename : args) {
+        bf.load(args[0]);
+        bf.trim();
+        std::cout << bf.getSource() << std::endl;
+        return EXIT_SUCCESS;
+      }
+    }
+    std::string target = ap.get("target");
+    if (target == "xbyakc") {
+      bf.load(args[0]);
+      bf.compile(Brainfuck::CompileType::kJit);
+      bf.dumpXbyak();
+      return EXIT_SUCCESS;
+    }
     if (ap.get<bool>("dump-ir")) {
       for (const auto& filename : args) {
         bf.load(filename);
