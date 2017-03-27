@@ -346,9 +346,8 @@ public:
             int offset = (bfSource[pc] == '+' ? 1 : -1);
             pc++;
             int value = compressInstruction(pc, '+', '-') + offset;
-            BfInst& prevInst1 = ircode[ircode.size() - 1];
-            if (ircode.size() > 0 && prevInst1.type == BfInst::Type::kAssign && prevInst1.op1 == 0) {
-              prevInst1.op1 = value;
+            if (ircode.size() > 0 && ircode[ircode.size() - 1].type == BfInst::Type::kAssign && ircode[ircode.size() - 1].op1 == 0) {
+              ircode[ircode.size() - 1].op1 = value;
             } else {
               ircode.emplace_back(BfInst(BfInst::Type::kAdd, value));
             }
