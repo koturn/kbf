@@ -41,7 +41,7 @@ main(int argc, const char* argv[])
     Brainfuck bf;
     if (ap.get<bool>("minify")) {
       for (const auto& filename : args) {
-        bf.load(args[0]);
+        bf.load(filename);
         bf.trim();
         std::cout << bf.getSource() << std::endl;
         return EXIT_SUCCESS;
@@ -50,6 +50,7 @@ main(int argc, const char* argv[])
     std::string target = ap.get("target");
     if (target == "xbyakc") {
       bf.load(args[0]);
+      bf.trim();
       bf.compile(Brainfuck::CompileType::kJit);
       bf.dumpXbyak();
       return EXIT_SUCCESS;
@@ -57,6 +58,7 @@ main(int argc, const char* argv[])
     if (ap.get<bool>("dump-ir")) {
       for (const auto& filename : args) {
         bf.load(filename);
+        bf.trim();
         bf.compile();
         bf.dumpIR();
       }
@@ -69,12 +71,14 @@ main(int argc, const char* argv[])
     } else if (optLevel < 2) {
       for (const auto& filename : args) {
         bf.load(filename);
+        bf.trim();
         bf.compile();
         bf.execute(heapSize);
       }
     } else {
       for (const auto& filename : args) {
         bf.load(filename);
+        bf.trim();
         bf.compile(Brainfuck::CompileType::kJit);
         bf.execute(heapSize);
       }

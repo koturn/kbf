@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <queue>
 #include <stack>
 #include <string>
 #include <vector>
@@ -21,7 +22,27 @@
 #if !defined(XBYAK_NO_OP_NAMES) && defined(__GNUC__)
 #  define XBYAK_NO_OP_NAMES
 #endif
+
+#define BRAINFUCK_GNUC_PREREQ(major, minor)  \
+  (defined(__GNUC__) && (__GNUC__ > (major) || __gnuc__ == (major) && __GNUC_MINOR__ >= (minor)))
+
+#if BRAINFUCK_GNUC_PREREQ(4, 6)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wconversion"
+#  pragma GCC diagnostic ignored "-Weffc++"
+#  if __cplusplus >= 201103L
+#    pragma GCC diagnostic ignored "-Wsuggest-final-methods"
+#    pragma GCC diagnostic ignored "-Wsuggest-final-types"
+#    pragma GCC diagnostic ignored "-Wsuggest-override"
+#    pragma GCC diagnostic ignored "-Wuseless-cast"
+#    pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
+#  endif
+#endif  // BRAINFUCK_GNUC_PREREQ(4, 6)
 #include <xbyak/xbyak.h>
+#if BRAINFUCK_GNUC_PREREQ(4, 6)
+#  pragma GCC diagnostic pop
+#endif  // BRAINFUCK_GNUC_PREREQ(4, 6)
+
 
 #include "BfInst.h"
 
@@ -135,72 +156,6 @@ private:
   CompileType state;
 
   /*!
-   * @brief Generate an "At" operation
-   * @param [in] dInst  Destination instruction
-   * @param [in] inst1  Instruction which may represents a value
-   * @return Return true if type of inst1 is a value instruction, otherwise false
-   */
-  static bool
-  genOperationAt(BfInst& dInst, const BfInst& inst1) BRAINFUCK_NOEXCEPT
-  {
-    switch (inst1.type) {
-      case BfInst::Type::kInc:
-        dInst.type = BfInst::Type::kIncAt;
-        return false;
-      case BfInst::Type::kDec:
-        dInst.type = BfInst::Type::kDecAt;
-        return false;
-      case BfInst::Type::kAdd:
-        dInst.type = BfInst::Type::kAddAt;
-        dInst.op2 = inst1.op1;
-        return false;
-      case BfInst::Type::kSub:
-        dInst.type = BfInst::Type::kSubAt;
-        dInst.op2 = inst1.op1;
-        return false;
-      case BfInst::Type::kAssignZero:
-        dInst.type = BfInst::Type::kAssignAt;
-        return false;
-      case BfInst::Type::kAssign:
-        dInst.type = BfInst::Type::kAssignAt;
-        dInst.op2 = inst1.op1;
-        return false;
-      default:
-        return true;
-    }
-  }
-
-  /*!
-   * @brief Identify whether given instruction type is a pointer movement operation or not
-   * @param [in] type  Instruction type
-   * @return Return true if given argument is kNext, kNextN, kPrev or kPrevN,
-   *         otherwise false.
-   */
-  static bool
-  isPointerOperation(BfInst::Type type) BRAINFUCK_NOEXCEPT
-  {
-    return type == BfInst::Type::kNext
-      || type == BfInst::Type::kNextN
-      || type == BfInst::Type::kPrev
-      || type == BfInst::Type::kPrevN;
-  }
-
-  /*!
-   * @brief Identify whether given instruction type is an "At" operation or not
-   * @param [in] type  Instruction type
-   * @return Return true if given argument is kIncAt, kDecAt, kAddAt or kSubAt,
-   *         otherwise false.
-   */
-  static bool
-  isOperationAt(BfInst::Type type) BRAINFUCK_NOEXCEPT
-  {
-    return type == BfInst::Type::kIncAt
-      || type == BfInst::Type::kDecAt
-      || type == BfInst::Type::kAddAt
-      || type == BfInst::Type::kSubAt;
-  }
-
-  /*!
    * @brief Compress value or pointer movement operation
    * @param [in] pc  A program counter
    * @param [in] c1  Pair 1
@@ -222,6 +177,15 @@ private:
       }
     }
     return value;
+  }
+
+  void
+  reduceIrCode(int n, const BfInst& inst) BRAINFUCK_NOEXCEPT
+  {
+    for (int i = 0; i < n; i++) {
+      ircode.pop_back();
+    }
+    ircode.emplace_back(inst);
   }
 
   /*!
@@ -352,6 +316,8 @@ public:
         compileToIR();
         compileToNative();
         break;
+      default:
+        assert(false);
     }
     state = ct;
   }
@@ -367,111 +333,24 @@ public:
     for (std::string::size_type pc = 0; pc < bfSource.size(); pc++) {
       switch (bfSource[pc]) {
         case '>':
-          {
-            bool isNormalNext = true;
-            pc++;
-            int value = compressInstruction(pc, '>', '<') + 1;
-            BfInst bi;
-            if (ircode.size() > 1) {
-              BfInst inst1 = ircode[ircode.size() - 1];  // (+*|-*) ?
-              BfInst inst2 = ircode[ircode.size() - 2];  // <* ?
-              if (value == 1 && inst2.type == BfInst::Type::kPrev) {
-                bi.op1 = -1;
-                isNormalNext = genOperationAt(bi, inst1);
-              } else if (value == -1 && inst2.type == BfInst::Type::kNext) {
-                bi.op1 = 1;
-                isNormalNext = genOperationAt(bi, inst1);
-              } else if (value > 1 && inst2.type == BfInst::Type::kPrevN && value == inst2.op1) {
-                bi.op1 = -inst2.op1;
-                isNormalNext = genOperationAt(bi, inst1);
-              } else if (value < 1 && inst2.type == BfInst::Type::kNextN && -value == inst2.op1) {
-                bi.op1 = inst2.op1;
-                isNormalNext = genOperationAt(bi, inst1);
-              }
-            }
-            if (isNormalNext) {
-              if (value > 0) {
-                ircode.emplace_back(value == 1 ? BfInst(BfInst::Type::kNext) : BfInst(BfInst::Type::kNextN, value));
-              } else if (value < 0) {
-                ircode.emplace_back(value == -1 ? BfInst(BfInst::Type::kPrev) : BfInst(BfInst::Type::kPrevN, -value));
-              } else {
-                continue;
-              }
-            } else {
-              ircode.pop_back(); ircode.pop_back();
-              ircode.emplace_back(bi);
-            }
-          }
-          break;
         case '<':
           {
-            bool isNormalPrev = true;
+            int offset = (bfSource[pc] == '>' ? 1 : -1);
             pc++;
-            int value = compressInstruction(pc, '<', '>') + 1;
-            BfInst bi;
-            if (ircode.size() > 1) {
-              BfInst inst1 = ircode[ircode.size() - 1];  // (+*|-*) ?
-              BfInst inst2 = ircode[ircode.size() - 2];  // >* ?
-              if (value == 1 && inst2.type == BfInst::Type::kNext) {
-                bi.op1 = 1;
-                isNormalPrev = genOperationAt(bi, inst1);
-              } else if (value == -1 && inst2.type == BfInst::Type::kPrev) {
-                bi.op1 = -1;
-                isNormalPrev = genOperationAt(bi, inst1);
-              } else if (value > 0 && inst2.type == BfInst::Type::kNextN && value == inst2.op1) {
-                bi.op1 = inst2.op1;
-                isNormalPrev = genOperationAt(bi, inst1);
-              } else if (value < 0 && inst2.type == BfInst::Type::kPrevN && -value == inst2.op1) {
-                bi.op1 = -inst2.op1;
-                isNormalPrev = genOperationAt(bi, inst1);
-              }
-            }
-            if (isNormalPrev) {
-              if (value > 0) {
-                ircode.emplace_back(value == 1 ? BfInst(BfInst::Type::kPrev) : BfInst(BfInst::Type::kPrevN, value));
-              } else if (value < 0) {
-                ircode.emplace_back(value == -1 ? BfInst(BfInst::Type::kNext) : BfInst(BfInst::Type::kNextN, -value));
-              } else {
-                continue;
-              }
-            } else {
-              ircode.pop_back(); ircode.pop_back();
-              ircode.emplace_back(bi);
-            }
+            ircode.emplace_back(BfInst(BfInst::Type::kMovePointer, compressInstruction(pc, '>', '<') + offset));
           }
           break;
         case '+':
-          {
-            pc++;
-            int value = compressInstruction(pc, '+', '-') + 1;
-            if (ircode.size() > 0 && ircode[ircode.size() - 1].type == BfInst::Type::kAssignZero) {
-              ircode.pop_back();  // remove kAssignZero
-              ircode.emplace_back(BfInst(BfInst::Type::kAssign, value));
-            } else {
-              if (value > 0) {
-                ircode.emplace_back(value == 1 ? BfInst(BfInst::Type::kInc) : BfInst(BfInst::Type::kAdd, value));
-              } else if (value < 0) {
-                ircode.emplace_back(value == -1 ? BfInst(BfInst::Type::kDec) : BfInst(BfInst::Type::kSub, -value));
-              }
-            }
-          }
-          break;
         case '-':
           {
+            int offset = (bfSource[pc] == '+' ? 1 : -1);
             pc++;
-            int value = compressInstruction(pc, '-', '+') + 1;
-            if (ircode.size() > 0 && ircode[ircode.size() - 1].type == BfInst::Type::kAssignZero) {
-              while (value < 0) {
-                value += 256;
-              }
-              ircode.pop_back();  // remove kAssignZero
-              ircode.emplace_back(BfInst(BfInst::Type::kAssign, value));
+            int value = compressInstruction(pc, '+', '-') + offset;
+            BfInst& prevInst1 = ircode[ircode.size() - 1];
+            if (ircode.size() > 0 && prevInst1.type == BfInst::Type::kAssign && prevInst1.op1 == 0) {
+              prevInst1.op1 = value;
             } else {
-              if (value > 0) {
-                ircode.emplace_back(value == 1 ? BfInst(BfInst::Type::kDec) : BfInst(BfInst::Type::kSub, value));
-              } else if (value < 0) {
-                ircode.emplace_back(value == -1 ? BfInst(BfInst::Type::kInc) : BfInst(BfInst::Type::kAdd, -value));
-              }
+              ircode.emplace_back(BfInst(BfInst::Type::kAdd, value));
             }
           }
           break;
@@ -487,67 +366,68 @@ public:
           break;
         case ']':
           {
-            bool isNormalLoopEnd = true;
+            bool isReduced = false;
             std::vector<BfInst>::size_type size = ircode.size();
             if (size > 0 && ircode[size - 1].type == BfInst::Type::kLoopStart) {
-              ircode.pop_back();
-              ircode.emplace_back(BfInst(BfInst::Type::kInfLoop));
-              isNormalLoopEnd = false;
+              reduceIrCode(1, BfInst(BfInst::Type::kInfLoop));
+              isReduced = true;
             } else if (size > 1 && ircode[size - 2].type == BfInst::Type::kLoopStart) {
-              BfInst inst = ircode[size - 1];
-              if (inst.type == BfInst::Type::kInc || inst.type == BfInst::Type::kDec) {
-                ircode.pop_back(); ircode.pop_back();
-                ircode.emplace_back(BfInst(BfInst::Type::kAssignZero));
-              } else if (isPointerOperation(inst.type)) {
-                ircode.pop_back(); ircode.pop_back();
-                switch (inst.type) {
-                  case BfInst::Type::kNext:
-                    ircode.emplace_back(BfInst(BfInst::Type::kSearchZero, 1));
-                    break;
-                  case BfInst::Type::kPrev:
-                    ircode.emplace_back(BfInst(BfInst::Type::kSearchZero, -1));
-                    break;
-                  case BfInst::Type::kNextN:
-                    ircode.emplace_back(BfInst(BfInst::Type::kSearchZero, inst.op1));
-                    break;
-                  case BfInst::Type::kPrevN:
-                    ircode.emplace_back(BfInst(BfInst::Type::kSearchZero, -inst.op1));
-                    break;
-                  default:
-                    assert(false);  // never reach here
-                }
+              const BfInst& prevInst1 = ircode[size - 1];
+              if (prevInst1.type == BfInst::Type::kAdd && std::abs(prevInst1.op1) == 1) {
+                reduceIrCode(2, BfInst(BfInst::Type::kAssign, 0));
+              } else if (prevInst1.type == BfInst::Type::kMovePointer) {
+                reduceIrCode(2, BfInst(BfInst::Type::kSearchZero, prevInst1.op1));
               }
-              isNormalLoopEnd = false;
-            } else if (size > 2) {  // [->+<]
-              BfInst inst1 = ircode[size - 1];  // >*(+|-)*<* ? or - ?
-              BfInst inst2 = ircode[size - 2];  // - ? or >*(+|-)*<* ?
-              BfInst inst3 = ircode[size - 3];  // [ ?
-              if (inst3.type == BfInst::Type::kLoopStart &&
-                  ((inst2.type == BfInst::Type::kDec && isOperationAt(inst1.type)) ||
-                   (isOperationAt(inst2.type) && inst1.type == BfInst::Type::kDec))) {
-                const BfInst& c = (inst2.type == BfInst::Type::kDec) ? inst1 : inst2;
-                switch (c.type) {
-                  case BfInst::Type::kIncAt:
-                    ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
-                    ircode.emplace_back(BfInst(BfInst::Type::kAddVar, c.op1));
-                    isNormalLoopEnd = false;
+              isReduced = true;
+            } else if (size > 2) {
+              int base = loopStack.top();
+              const BfInst& prevInst1 = ircode[size - 1];
+              const BfInst& prevInst2 = ircode[size - 2];
+              const BfInst& fromInst1 = ircode[base + 1];
+              std::vector<BfInst>::size_type startIdx = -1, endIdx = -1;
+              int rollbackMove = -1;
+              if (prevInst1.type == BfInst::Type::kAdd && prevInst1.op1 == -1) {
+                startIdx = base + 1;
+                endIdx = size - 2;
+                rollbackMove = prevInst2.op1;
+              } else if (fromInst1.type == BfInst::Type::kAdd && fromInst1.op1 == -1) {
+                startIdx = base + 2;
+                endIdx = size - 1;
+                rollbackMove = prevInst1.op1;
+              }
+              if (startIdx != static_cast<std::vector<BfInst>::size_type>(-1)) {
+                std::queue<BfInst> reduceQueue;
+                int sumMove = 0;
+                for (std::vector<BfInst>::size_type i = startIdx; i < endIdx; i += 2) {
+                  const BfInst& inst1 = ircode[i];
+                  const BfInst& inst2 = ircode[i + 1];
+                  if (inst1.type == BfInst::Type::kMovePointer && inst2.type == BfInst::Type::kAdd) {
+                    sumMove += inst1.op1;
+                    if (inst2.op1 == 1) {
+                      reduceQueue.push(BfInst(BfInst::Type::kAddVar, sumMove));
+                    } else if (inst2.op1 == -1) {
+                      reduceQueue.push(BfInst(BfInst::Type::kSubVar, sumMove));
+                    } else {
+                      reduceQueue.push(BfInst(BfInst::Type::kCMulVar, sumMove, inst2.op1));
+                    }
+                  } else {
+                    sumMove = 0x7fffffff;
                     break;
-                  case BfInst::Type::kDecAt:
-                    ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
-                    ircode.emplace_back(BfInst(BfInst::Type::kSubVar, c.op1));
-                    isNormalLoopEnd = false;
-                    break;
-                  case BfInst::Type::kAddAt:
-                    ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
-                    ircode.emplace_back(BfInst(BfInst::Type::kCMulVar, c.op1, c.op2));
-                    isNormalLoopEnd = false;
-                    break;
-                  default:
-                    break;
+                  }
+                }
+                if (sumMove + rollbackMove == 0) {
+                  for (int i = 0; !reduceQueue.empty(); i++) {
+                    ircode[base + i] = reduceQueue.front();
+                    ircode.pop_back();
+                    reduceQueue.pop();
+                  }
+                  ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
+                  ircode.emplace_back(BfInst(BfInst::Type::kAssign, 0));
+                  isReduced = true;
                 }
               }
             }
-            if (isNormalLoopEnd) {
+            if (!isReduced) {
               ircode[static_cast<std::size_t>(loopStack.top())].op1 = static_cast<int>(ircode.size());
               ircode.emplace_back(BfInst(BfInst::Type::kLoopEnd, loopStack.top()));
             }
@@ -600,49 +480,35 @@ public:
     std::stack<int> keepLabelNo;
     for (const auto& inst : ircode) {
       switch (inst.type) {
-        case BfInst::Type::kNext:
-          cg.inc(stack);
-          break;
-        case BfInst::Type::kPrev:
-          cg.dec(stack);
-          break;
-        case BfInst::Type::kNextN:
-          cg.add(stack, inst.op1);
-          break;
-        case BfInst::Type::kPrevN:
-          cg.sub(stack, inst.op1);
-          break;
-        case BfInst::Type::kInc:
-          cg.inc(cur);
-          break;
-        case BfInst::Type::kDec:
-          cg.dec(cur);
+        case BfInst::Type::kMovePointer:
+          if (inst.op1 > 0) {
+            if (inst.op1 == 1) {
+              cg.inc(stack);
+            } else {
+              cg.add(stack, inst.op1);
+            }
+          } else if (inst.op1 < 0) {
+            if (inst.op1 == -1) {
+              cg.dec(stack);
+            } else {
+              cg.sub(stack, -inst.op1);
+            }
+          }
           break;
         case BfInst::Type::kAdd:
-          cg.add(cur, inst.op1);
-          break;
-        case BfInst::Type::kSub:
-          cg.sub(cur, inst.op1);
-          break;
-        case BfInst::Type::kIncAt:
-          cg.add(stack, inst.op1);
-          cg.inc(cur);
-          cg.sub(stack, inst.op1);
-          break;
-        case BfInst::Type::kDecAt:
-          cg.add(stack, inst.op1);
-          cg.dec(cur);
-          cg.sub(stack, inst.op1);
-          break;
-        case BfInst::Type::kAddAt:
-          cg.add(stack, inst.op1);
-          cg.add(cur, inst.op2);
-          cg.sub(stack, inst.op1);
-          break;
-        case BfInst::Type::kSubAt:
-          cg.add(stack, inst.op1);
-          cg.sub(cur, inst.op2);
-          cg.sub(stack, inst.op1);
+          if (inst.op1 > 0) {
+            if (inst.op1 == 1) {
+              cg.inc(cur);
+            } else {
+              cg.add(cur, inst.op1);
+            }
+          } else if (inst.op1 < 0) {
+            if (inst.op1 == -1) {
+              cg.dec(cur);
+            } else {
+              cg.sub(cur, -inst.op1);
+            }
+          }
           break;
         case BfInst::Type::kPutchar:
 #ifdef XBYAK32
@@ -684,16 +550,8 @@ public:
             cg.L(toXbyakLabelString(no, XbyakDirection::F));
           }
           break;
-        case BfInst::Type::kAssignZero:
-          cg.mov(cur, 0);
-          break;
         case BfInst::Type::kAssign:
           cg.mov(cur, inst.op1);
-          break;
-        case BfInst::Type::kAssignAt:
-          cg.add(stack, inst.op1);
-          cg.mov(cur, inst.op2);
-          cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kSearchZero:
           // kLoopStart
@@ -710,14 +568,12 @@ public:
           break;
         case BfInst::Type::kAddVar:
           cg.mov(cg.al, cur);
-          cg.mov(cur, 0);
           cg.add(stack, inst.op1);
           cg.add(cur, cg.al);
           cg.sub(stack, inst.op1);
           break;
         case BfInst::Type::kSubVar:
           cg.mov(cg.al, cur);
-          cg.mov(cur, 0);
           cg.add(stack, inst.op1);
           cg.sub(cur, cg.al);
           cg.sub(stack, inst.op1);
@@ -725,7 +581,6 @@ public:
         case BfInst::Type::kCMulVar:
           cg.mov(cg.al, inst.op2);
           cg.mul(cur);
-          cg.mov(cur, 0);
           cg.add(stack, inst.op1);
           cg.add(cur, cg.al);
           cg.sub(stack, inst.op1);
@@ -870,41 +725,11 @@ public:
     std::size_t hp = 0;
     for (std::vector<BfInst>::size_type pc = 0, size = ircode.size(); pc < size; pc++) {
       switch (ircode[pc].type) {
-        case BfInst::Type::kNext:
-          hp++;
-          break;
-        case BfInst::Type::kPrev:
-          hp--;
-          break;
-        case BfInst::Type::kNextN:
+        case BfInst::Type::kMovePointer:
           hp = hp + static_cast<std::size_t>(ircode[pc].op1);
-          break;
-        case BfInst::Type::kPrevN:
-          hp = hp - static_cast<std::size_t>(ircode[pc].op1);
-          break;
-        case BfInst::Type::kInc:
-          heap[hp]++;
-          break;
-        case BfInst::Type::kDec:
-          heap[hp]--;
           break;
         case BfInst::Type::kAdd:
           heap[hp] = static_cast<unsigned char>(heap[hp] + ircode[pc].op1);
-          break;
-        case BfInst::Type::kSub:
-          heap[hp] = static_cast<unsigned char>(heap[hp] - ircode[pc].op1);
-          break;
-        case BfInst::Type::kIncAt:
-          heap[hp + static_cast<std::size_t>(ircode[pc].op1)]++;
-          break;
-        case BfInst::Type::kDecAt:
-          heap[hp + static_cast<std::size_t>(ircode[pc].op1)]--;
-          break;
-        case BfInst::Type::kAddAt:
-          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + ircode[pc].op2);
-          break;
-        case BfInst::Type::kSubAt:
-          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] - ircode[pc].op2);
           break;
         case BfInst::Type::kPutchar:
           std::cout.put(static_cast<char>(heap[hp]));
@@ -923,14 +748,8 @@ public:
             pc = static_cast<std::size_t>(ircode[pc].op1);
           }
           break;
-        case BfInst::Type::kAssignZero:
-          heap[hp] = 0;
-          break;
         case BfInst::Type::kAssign:
           heap[hp] = static_cast<unsigned char>(ircode[pc].op1);
-          break;
-        case BfInst::Type::kAssignAt:
-          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(ircode[pc].op2);
           break;
         case BfInst::Type::kSearchZero:
           {
@@ -943,19 +762,16 @@ public:
         case BfInst::Type::kAddVar:
           if (heap[hp]) {
             heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp]);
-            heap[hp] = 0;
           }
           break;
         case BfInst::Type::kSubVar:
           if (heap[hp]) {
             heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] - heap[hp]);
-            heap[hp] = 0;
           }
           break;
         case BfInst::Type::kCMulVar:
           if (heap[hp]) {
             heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp] * ircode[pc].op2);
-            heap[hp] = 0;
           }
           break;
         case BfInst::Type::kInfLoop:
@@ -987,41 +803,11 @@ public:
   {
     for (std::vector<BfInst>::size_type pc = 0, size = ircode.size(); pc < size; pc++) {
       switch (ircode[pc].type) {
-        case BfInst::Type::kNext:
-          std::cout << "kNext" << std::endl;
-          break;
-        case BfInst::Type::kPrev:
-          std::cout << "kPrev" << std::endl;
-          break;
-        case BfInst::Type::kNextN:
-          std::cout << "kNextN: " << ircode[pc].op1 << std::endl;
-          break;
-        case BfInst::Type::kPrevN:
-          std::cout << "kPrevN: " << ircode[pc].op1 << std::endl;
-          break;
-        case BfInst::Type::kInc:
-          std::cout << "kInc" << std::endl;
-          break;
-        case BfInst::Type::kDec:
-          std::cout << "kDec" << std::endl;
+        case BfInst::Type::kMovePointer:
+          std::cout << "kMovePointer: " << ircode[pc].op1 << std::endl;
           break;
         case BfInst::Type::kAdd:
-          std::cout << "kAddN: " << ircode[pc].op1 << std::endl;
-          break;
-        case BfInst::Type::kSub:
-          std::cout << "kSubN: " << ircode[pc].op1 << std::endl;
-          break;
-        case BfInst::Type::kIncAt:
-          std::cout << "kIncAt: " << ircode[pc].op1 << std::endl;
-          break;
-        case BfInst::Type::kDecAt:
-          std::cout << "kDecAt: " << ircode[pc].op1 << std::endl;
-          break;
-        case BfInst::Type::kAddAt:
-          std::cout << "kAddAt: " << ircode[pc].op1 << ", " << ircode[pc].op2 << std::endl;
-          break;
-        case BfInst::Type::kSubAt:
-          std::cout << "kSubAt: " << ircode[pc].op1 << ", " << ircode[pc].op2 << std::endl;
+          std::cout << "kAdd: " << ircode[pc].op1 << std::endl;
           break;
         case BfInst::Type::kPutchar:
           std::cout << "kPutchar" << std::endl;
@@ -1035,14 +821,8 @@ public:
         case BfInst::Type::kLoopEnd:
           std::cout << "kLoopEnd" << std::endl;
           break;
-        case BfInst::Type::kAssignZero:
-          std::cout << "kAssignZero" << std::endl;
-          break;
         case BfInst::Type::kAssign:
           std::cout << "kAssign: " << ircode[pc].op1 << std::endl;
-          break;
-        case BfInst::Type::kAssignAt:
-          std::cout << "kAssignAt: " << ircode[pc].op1 << ", " << ircode[pc].op2 << std::endl;
           break;
         case BfInst::Type::kSearchZero:
           std::cout << "kSearchZero: " << ircode[pc].op1 << std::endl;

@@ -13,12 +13,10 @@
 struct BfInst {
 //! Brainfuck instructions
 #define BF_INST_INSTRUCTIONS \
-  kNext, kPrev, kNextN, kPrevN, \
-  kInc, kDec, kAdd, kSub, \
-  kIncAt, kDecAt, kAddAt, kSubAt, \
+  kMovePointer, kAdd, \
   kPutchar, kGetchar, \
   kLoopStart, kLoopEnd, \
-  kAssignZero, kAssign, kAssignAt, kSearchZero, \
+  kAssign, kSearchZero, \
   kAddVar, kSubVar, kCMulVar, \
   kInfLoop, \
   kUnknown
