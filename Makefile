@@ -81,7 +81,7 @@ MKDIR        := mkdir -p
 CP           := cp
 RM           := rm -rf
 CTAGS        := ctags
-# MACROS     := MACRO
+MACROS       := XBYAK_NO_OP_NAMES
 INCDIRS      := xbyak/
 CPPFLAGS     := $(addprefix -D,$(MACROS)) $(addprefix -I,$(INCDIRS))
 CFLAGS       := -pipe $(WARNING_CFLAGS) $(OPT_CFLAGS)
@@ -123,7 +123,7 @@ depends:
 	$(CXX) -MM $(SRCS) > $(DEPENDS)
 
 syntax:
-	$(CXX) $(SRCS) -fsyntax-only $(WARNING_CXXFLAGS) $(INCS) $(MACROS)
+	$(CXX) $(SRCS) -fsyntax-only $(CPPFLAGS) $(WARNING_CXXFLAGS)
 
 ctags:
 	$(CTAGS) $(CTAGSFLAGS)
