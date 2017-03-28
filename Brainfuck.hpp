@@ -6,8 +6,9 @@
 #ifndef BRAINFUCK_HPP
 #define BRAINFUCK_HPP
 
-#include <cstdio>
 #include <cassert>
+#include <cmath>
+#include <cstdio>
 #include <algorithm>
 #include <exception>
 #include <fstream>
@@ -24,7 +25,7 @@
 #endif
 
 #define BRAINFUCK_GNUC_PREREQ(major, minor)  \
-  (defined(__GNUC__) && (__GNUC__ > (major) || __gnuc__ == (major) && __GNUC_MINOR__ >= (minor)))
+  (defined(__GNUC__) && (__GNUC__ > (major) || __GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))
 
 #if BRAINFUCK_GNUC_PREREQ(4, 6)
 #  pragma GCC diagnostic push
@@ -870,11 +871,28 @@ public:
 #elif defined(__linux__)
                  "#include <unistd.h>\n"
                  "#include <sys/mman.h>\n"
-#endif
+#endif  // defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
                  "\n"
+#if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
+                 "#define GNUC_PREREQ(major, minor) \\\n"
+                 "  (defined(__GNUC__) && (__GNUC__ > (major) || __GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))\n\n"
+                 "#if defined(_MSC_VER)\n"
+                 "#  pragma warning(push)\n"
+                 "#  pragma warning(disable: 4055)\n"
+                 "#elif GNUC_PREREQ(4, 6)\n"
+                 "#  pragma GCC diagnostic push\n"
+                 "#  pragma GCC diagnostic ignored \"-Wcast-qual\"\n"
+                 "#  pragma GCC diagnostic ignored \"-Wpedantic\"\n"
+#elif defined(__linux__)
+                 "#if __GNUC_PREREQ(4, 6)\n"
+                 "#  pragma GCC diagnostic push\n"
+                 "#  pragma GCC diagnostic ignored \"-Wcast-qual\"\n"
+                 "#  pragma GCC diagnostic ignored \"-Wpedantic\"\n"
+#endif  // defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
+                 "#endif\n\n"
                  "static unsigned char stack[65536];\n"
                  "/* code size: " << size << " bytes */\n"
-                 "static unsigned char code[] = {\n"
+                 "static const unsigned char code[] = {\n"
               << std::hex << " ";
     for (std::size_t i = 0; i < size; i++) {
       std::cout << " 0x" << std::setfill('0') << std::setw(2) << static_cast<unsigned int>(code[i]) << ",";
@@ -891,12 +909,22 @@ public:
                  "  DWORD old_protect;\n"
                  "  VirtualProtect((LPVOID) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
 #elif defined(__linux__)
-                 "  long page_size = sysconf(_SC_PAGESIZE) - 1;\n"
+                 "  unsigned long page_size = (unsigned long) (sysconf(_SC_PAGESIZE) - 1);\n"
                  "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
-#endif
+#endif  // defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
                  "  ((void (*)(int (*)(int), int (*)(), unsigned char *)) (unsigned char *) code)(putchar, getchar, stack);\n"
                  "  return EXIT_SUCCESS;\n"
-                 "}"
+                 "}\n\n\n"
+#if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
+                 "#if defined(_MSC_VER)\n"
+                 "#  pragma warning(pop)\n"
+                 "#elif GNUC_PREREQ(4, 6)\n"
+                 "#  pragma GCC diagnostic pop\n"
+#elif defined(__linux__)
+                 "#if __GNUC_PREREQ(4, 6)\n"
+                 "#  pragma GCC diagnostic pop\n"
+#endif  // defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
+                 "#endif"
               << std::endl;
   }
 
