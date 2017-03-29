@@ -760,19 +760,13 @@ public:
           }
           break;
         case BfInst::Type::kAddVar:
-          if (heap[hp]) {
-            heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp]);
-          }
+          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp]);
           break;
         case BfInst::Type::kSubVar:
-          if (heap[hp]) {
-            heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] - heap[hp]);
-          }
+          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] - heap[hp]);
           break;
         case BfInst::Type::kCMulVar:
-          if (heap[hp]) {
-            heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp] * ircode[pc].op2);
-          }
+          heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp] * ircode[pc].op2);
           break;
         case BfInst::Type::kInfLoop:
           if (heap[hp]) {
