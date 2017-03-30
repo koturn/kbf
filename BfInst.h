@@ -17,7 +17,7 @@ struct BfInst {
   kPutchar, kGetchar, \
   kLoopStart, kLoopEnd, \
   kAssign, kSearchZero, \
-  kAddVar, kSubVar, kCMulVar, \
+  kAddVar, kSubVar, kAddCMulVar, \
   kInfLoop, \
   kUnknown
 

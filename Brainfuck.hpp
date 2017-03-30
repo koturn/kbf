@@ -375,10 +375,11 @@ public:
               const BfInst& prevInst1 = ircode[size - 1];
               if (prevInst1.type == BfInst::Type::kAdd && std::abs(prevInst1.op1) == 1) {
                 reduceIrCode(2, BfInst(BfInst::Type::kAssign, 0));
+                isReduced = true;
               } else if (prevInst1.type == BfInst::Type::kMovePointer) {
                 reduceIrCode(2, BfInst(BfInst::Type::kSearchZero, prevInst1.op1));
+                isReduced = true;
               }
-              isReduced = true;
             } else if (size > 2) {
               int base = loopStack.top();
               const BfInst& prevInst1 = ircode[size - 1];
@@ -408,7 +409,7 @@ public:
                     } else if (inst2.op1 == -1) {
                       reduceQueue.push(BfInst(BfInst::Type::kSubVar, sumMove));
                     } else {
-                      reduceQueue.push(BfInst(BfInst::Type::kCMulVar, sumMove, inst2.op1));
+                      reduceQueue.push(BfInst(BfInst::Type::kAddCMulVar, sumMove, inst2.op1));
                     }
                   } else {
                     sumMove = 0x7fffffff;
@@ -416,12 +417,13 @@ public:
                   }
                 }
                 if (sumMove + rollbackMove == 0) {
+                  for (std::queue<BfInst>::size_type i = 0, im = reduceQueue.size() + 3; i < im; i++) {
+                    ircode.pop_back();
+                  }
                   for (int i = 0; !reduceQueue.empty(); i++) {
                     ircode[base + i] = reduceQueue.front();
-                    ircode.pop_back();
                     reduceQueue.pop();
                   }
-                  ircode.pop_back(); ircode.pop_back(); ircode.pop_back();
                   ircode.emplace_back(BfInst(BfInst::Type::kAssign, 0));
                   isReduced = true;
                 }
@@ -578,7 +580,7 @@ public:
           cg.sub(cur, cg.al);
           cg.sub(stack, inst.op1);
           break;
-        case BfInst::Type::kCMulVar:
+        case BfInst::Type::kAddCMulVar:
           cg.mov(cg.al, inst.op2);
           cg.mul(cur);
           cg.add(stack, inst.op1);
@@ -765,7 +767,7 @@ public:
         case BfInst::Type::kSubVar:
           heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] - heap[hp]);
           break;
-        case BfInst::Type::kCMulVar:
+        case BfInst::Type::kAddCMulVar:
           heap[hp + static_cast<std::size_t>(ircode[pc].op1)] = static_cast<unsigned char>(heap[hp + static_cast<std::size_t>(ircode[pc].op1)] + heap[hp] * ircode[pc].op2);
           break;
         case BfInst::Type::kInfLoop:
@@ -827,8 +829,8 @@ public:
         case BfInst::Type::kSubVar:
           std::cout << "kSubVar: " << ircode[pc].op1 << std::endl;
           break;
-        case BfInst::Type::kCMulVar:
-          std::cout << "kCMulVar: " << ircode[pc].op1 << ", " << ircode[pc].op2 << std::endl;
+        case BfInst::Type::kAddCMulVar:
+          std::cout << "kAddCMulVar: " << ircode[pc].op1 << ", " << ircode[pc].op2 << std::endl;
           break;
         case BfInst::Type::kInfLoop:
           std::cout << "kInfLoop" << std::endl;
