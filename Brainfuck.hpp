@@ -443,6 +443,7 @@ public:
   void
   compileToNative() BRAINFUCK_NOEXCEPT
   {
+    cg.reset();
 #ifdef XBYAK32
     const Xbyak::Reg32& pPutchar(cg.esi);
     const Xbyak::Reg32& pGetchar(cg.edi);
@@ -562,7 +563,19 @@ public:
           cg.test(cg.al, cg.al);
           cg.jz(toXbyakLabelString(labelNo, XbyakDirection::F), Xbyak::CodeGenerator::T_NEAR);
           // kNextN / kPrevN
-          cg.add(stack, inst.op1);
+          if (inst.op1 > 0) {
+            if (inst.op1 == 1) {
+              cg.inc(stack);
+            } else {
+              cg.add(stack, inst.op1);
+            }
+          } else if (inst.op1 < 0) {
+            if (inst.op1 == -1) {
+              cg.dec(stack);
+            } else {
+              cg.sub(stack, -inst.op1);
+            }
+          }
           // kLoopEnd
           cg.jmp(toXbyakLabelString(labelNo, XbyakDirection::B));
           cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
