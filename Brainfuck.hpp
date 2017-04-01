@@ -583,22 +583,16 @@ public:
           break;
         case BfInst::Type::kAddVar:
           cg.mov(cg.al, cur);
-          cg.add(stack, inst.op1);
-          cg.add(cur, cg.al);
-          cg.sub(stack, inst.op1);
+          cg.add(Xbyak::util::byte[stack + inst.op1], cg.al);
           break;
         case BfInst::Type::kSubVar:
           cg.mov(cg.al, cur);
-          cg.add(stack, inst.op1);
-          cg.sub(cur, cg.al);
-          cg.sub(stack, inst.op1);
+          cg.sub(Xbyak::util::byte[stack + inst.op1], cg.al);
           break;
         case BfInst::Type::kAddCMulVar:
           cg.mov(cg.al, inst.op2);
           cg.mul(cur);
-          cg.add(stack, inst.op1);
-          cg.add(cur, cg.al);
-          cg.sub(stack, inst.op1);
+          cg.add(Xbyak::util::byte[stack + inst.op1], cg.al);
           break;
         case BfInst::Type::kInfLoop:
           // if (cur != 0)
