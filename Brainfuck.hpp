@@ -417,14 +417,16 @@ public:
                   }
                 }
                 if (sumMove + rollbackMove == 0) {
-                  for (std::queue<BfInst>::size_type i = 0, im = reduceQueue.size() + 3; i < im; i++) {
+                  for (std::queue<BfInst>::size_type i = 0, im = reduceQueue.size() + 2; i < im; i++) {
                     ircode.pop_back();
                   }
-                  for (int i = 0; !reduceQueue.empty(); i++) {
+                  for (int i = 1; !reduceQueue.empty(); i++) {
                     ircode[base + i] = reduceQueue.front();
                     reduceQueue.pop();
                   }
                   ircode.emplace_back(BfInst(BfInst::Type::kAssign, 0));
+                  ircode[base] = BfInst(BfInst::Type::kIf, static_cast<int>(ircode.size()));
+                  ircode.emplace_back(BfInst(BfInst::Type::kEndIf, base));
                   isReduced = true;
                 }
               }
@@ -539,6 +541,7 @@ public:
           cg.mov(cur, cg.al);
           break;
         case BfInst::Type::kLoopStart:
+        case BfInst::Type::kIf:
           cg.L(toXbyakLabelString(labelNo, XbyakDirection::B));
           cg.mov(cg.al, cur);
           cg.test(cg.al, cg.al);
@@ -550,6 +553,13 @@ public:
             int no = keepLabelNo.top();
             keepLabelNo.pop();
             cg.jmp(toXbyakLabelString(no, XbyakDirection::B));
+            cg.L(toXbyakLabelString(no, XbyakDirection::F));
+          }
+          break;
+        case BfInst::Type::kEndIf:
+          {
+            int no = keepLabelNo.top();
+            keepLabelNo.pop();
             cg.L(toXbyakLabelString(no, XbyakDirection::F));
           }
           break;
@@ -757,6 +767,14 @@ public:
             pc = static_cast<std::size_t>(ircode[pc].op1);
           }
           break;
+        case BfInst::Type::kIf:
+          if (heap[hp] == 0) {
+            pc = static_cast<std::size_t>(ircode[pc].op1);
+          }
+          break;
+        case BfInst::Type::kEndIf:
+          // Do nothing
+          break;
         case BfInst::Type::kAssign:
           heap[hp] = static_cast<unsigned char>(ircode[pc].op1);
           break;
@@ -819,10 +837,16 @@ public:
           std::cout << "kGetchar" << std::endl;
           break;
         case BfInst::Type::kLoopStart:
-          std::cout << "kLoopStart" << std::endl;
+          std::cout << "kLoopStart" << ircode[pc].op1 << std::endl;
           break;
         case BfInst::Type::kLoopEnd:
-          std::cout << "kLoopEnd" << std::endl;
+          std::cout << "kLoopEnd" << ircode[pc].op1 << std::endl;
+          break;
+        case BfInst::Type::kIf:
+          std::cout << "kIf: " << ircode[pc].op1 << std::endl;
+          break;
+        case BfInst::Type::kEndIf:
+          std::cout << "kEndIf" << std::endl;
           break;
         case BfInst::Type::kAssign:
           std::cout << "kAssign: " << ircode[pc].op1 << std::endl;

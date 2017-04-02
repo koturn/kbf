@@ -15,7 +15,7 @@ struct BfInst {
 #define BF_INST_INSTRUCTIONS \
   kMovePointer, kAdd, \
   kPutchar, kGetchar, \
-  kLoopStart, kLoopEnd, \
+  kLoopStart, kLoopEnd, kIf, kEndIf, \
   kAssign, kSearchZero, \
   kAddVar, kSubVar, kAddCMulVar, \
   kInfLoop, \
