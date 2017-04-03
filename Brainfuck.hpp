@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "CodeGenerator/CodeGenerator.hpp"
+
 #if !defined(XBYAK_NO_OP_NAMES) && defined(__GNUC__)
 #  define XBYAK_NO_OP_NAMES
 #endif
@@ -112,6 +114,46 @@ public:
     //! Actual enum value
     CompileTypeEnum value;
   };  // class CompileType
+#endif  // __cplusplus >= 201103L
+
+#if __cplusplus >= 201103L
+  /*!
+   * @brief Target format
+   */
+  enum class Target
+  {
+    kC, kXbyakC
+  };  // enum class Target
+#else
+  class Target
+  {
+  public:
+    /*!
+     * @brief Actual enum of target format
+     */
+    enum TargetEnum
+    {
+      kC, kXbyakC
+    };
+    /*!
+     * @brief Ctor for implicit conversion: Actual enum to dummy enum class
+     * @param [in] value  Actual enum value
+     */
+    Target(TargetEnum value) :
+      value(value)
+    {}
+    /*!
+     * @brief operator () for implicit conversion: Dummy enum class to actual
+     *        enum
+     * @return Actual enum value
+     */
+    operator TargetEnum() const throw()
+    {
+      return value;
+    }
+  private:
+    TargetEnum value;
+  };  // class Target
 #endif  // __cplusplus >= 201103L
 
 private:
@@ -874,7 +916,22 @@ public:
   }
 
   void
-  dumpXbyak() BRAINFUCK_NOEXCEPT
+  emit(std::ostream& os, Target target) BRAINFUCK_NOEXCEPT
+  {
+    switch (target) {
+      case Target::kC:
+        GeneratorC(os).emit(ircode);
+        break;
+      case Target::kXbyakC:
+        dumpXbyak(os);
+        break;
+      default:
+        assert(false);
+    }
+  }
+
+  void
+  dumpXbyak(std::ostream& os) BRAINFUCK_NOEXCEPT
   {
     std::size_t size = cg.getSize();
     if (size == 0) {
@@ -883,7 +940,7 @@ public:
     }
     const Xbyak::uint8* code = cg.getCode();
 
-    std::cout << "#include <stdio.h>\n"
+    os << "#include <stdio.h>\n"
                  "#include <stdlib.h>\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
                  "#ifndef WIN32_LEAN_AND_MEAN\n"
@@ -922,37 +979,37 @@ public:
                  "static const unsigned char code[] = {\n"
               << std::hex << " ";
     for (std::size_t i = 0; i < size; i++) {
-      std::cout << " 0x" << std::setfill('0') << std::setw(2) << static_cast<unsigned int>(code[i]) << ",";
+      os << " 0x" << std::setfill('0') << std::setw(2) << static_cast<unsigned int>(code[i]) << ",";
       if (i % 16 == 15) {
-        std::cout << "\n ";
+        os << "\n ";
       }
     }
-    std::cout << std::dec
-              << "\n};\n\n\n"
-                 "int\n"
-                 "main(void)\n"
-                 "{\n"
+    os << std::dec
+       << "\n};\n\n\n"
+          "int\n"
+          "main(void)\n"
+          "{\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-                 "  DWORD old_protect;\n"
-                 "  VirtualProtect((LPVOID) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
+          "  DWORD old_protect;\n"
+          "  VirtualProtect((LPVOID) code, sizeof(code), PAGE_EXECUTE_READWRITE, &old_protect);\n"
 #elif defined(__linux__)
-                 "  unsigned long page_size = (unsigned long) (sysconf(_SC_PAGESIZE) - 1);\n"
-                 "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
+          "  unsigned long page_size = (unsigned long) (sysconf(_SC_PAGESIZE) - 1);\n"
+          "  mprotect((void *) code, (sizeof(code) + page_size) & ~page_size, PROT_READ | PROT_EXEC);\n"
 #endif  // defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-                 "  ((void (*)(int (*)(int), int (*)(), unsigned char *)) (unsigned char *) code)(putchar, getchar, stack);\n"
-                 "  return EXIT_SUCCESS;\n"
-                 "}\n\n\n"
+          "  ((void (*)(int (*)(int), int (*)(), unsigned char *)) (unsigned char *) code)(putchar, getchar, stack);\n"
+          "  return EXIT_SUCCESS;\n"
+          "}\n\n\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-                 "#if defined(_MSC_VER)\n"
-                 "#  pragma warning(pop)\n"
-                 "#elif GNUC_PREREQ(4, 6)\n"
-                 "#  pragma GCC diagnostic pop\n"
+          "#if defined(_MSC_VER)\n"
+          "#  pragma warning(pop)\n"
+          "#elif GNUC_PREREQ(4, 6)\n"
+          "#  pragma GCC diagnostic pop\n"
 #elif defined(__linux__)
-                 "#if __GNUC_PREREQ(4, 6)\n"
-                 "#  pragma GCC diagnostic pop\n"
+          "#if __GNUC_PREREQ(4, 6)\n"
+          "#  pragma GCC diagnostic pop\n"
 #endif  // defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-                 "#endif"
-              << std::endl;
+          "#endif"
+       << std::endl;
   }
 
   std::string
