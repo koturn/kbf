@@ -122,7 +122,7 @@ public:
    */
   enum class Target
   {
-    kC, kXbyakC
+    kC, kXbyakC, kElfX64
   };  // enum class Target
 #else
   class Target
@@ -133,7 +133,7 @@ public:
      */
     enum TargetEnum
     {
-      kC, kXbyakC
+      kC, kXbyakC, kElfX64
     };
     /*!
      * @brief Ctor for implicit conversion: Actual enum to dummy enum class
@@ -924,6 +924,9 @@ public:
         break;
       case Target::kXbyakC:
         dumpXbyak(os);
+        break;
+      case Target::kElfX64:
+        GeneratorElfX64(os).emit(ircode);
         break;
       default:
         assert(false);

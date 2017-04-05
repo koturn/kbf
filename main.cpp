@@ -9,12 +9,20 @@
 #include "Brainfuck.hpp"
 
 
+std::string
+removeDirectoryPart(const std::string& filepath);
+
+std::string
+removeSuffix(const std::string& filename);
+
+
 int
 main(int argc, const char* argv[])
 {
   std::unordered_map<std::string, Brainfuck::Target> targetMap{
     {"c", Brainfuck::Target::kC},
-    {"xbyakc", Brainfuck::Target::kXbyakC}
+    {"xbyakc", Brainfuck::Target::kXbyakC},
+    {"elfx64", Brainfuck::Target::kElfX64}
   };
 
   try {
@@ -24,7 +32,9 @@ main(int argc, const char* argv[])
     ap.add('t', "target", ArgumentParser::OptionType::kRequiredArgument,
         "Specify target language" + ap.getNewlineDescription()
         + "- c:      Transpile to C source" + ap.getNewlineDescription()
-        + "- xbyakc: Dump xbyak code as C source", "TARGET", "");
+        + "- xbyakc: Dump xbyak code as C source" + ap.getNewlineDescription()
+        + "- elfx64: Compile to x64 ELF binary",
+        "TARGET", "");
     ap.add('O', "optimize", ArgumentParser::OptionType::kRequiredArgument,
         "Specify optimization level" + ap.getNewlineDescription()
         + "Default value: 1" + ap.getNewlineDescription()
@@ -75,16 +85,34 @@ main(int argc, const char* argv[])
     }
     const std::string& target = ap.get("target");
     if (target != "") {
-      bf.load(args[0]);
-      bf.trim();
-      bf.compile(Brainfuck::CompileType::kJit);
       if (targetMap.find(target) == targetMap.end()) {
         std::cerr << "Option -t, --target: Invalid value: \"" << target << "\" is specified" << std::endl;
         return EXIT_FAILURE;
-      } else {
-        bf.emit(std::cout, targetMap[target]);
-        return EXIT_SUCCESS;
       }
+      bf.load(args[0]);
+      bf.trim();
+      bf.compile(Brainfuck::CompileType::kJit);
+      Brainfuck::Target targetType = targetMap[target];
+      std::string basename = removeSuffix(removeDirectoryPart(args[0]));
+      switch (targetType) {
+        case Brainfuck::Target::kC:
+        case Brainfuck::Target::kXbyakC:
+          bf.emit(std::cout, targetType);
+          break;
+        case Brainfuck::Target::kElfX64:
+          {
+            std::ofstream ofs(basename + ".out", std::ios::binary);
+            if (!ofs.is_open()) {
+              std::cerr << "Failed to open: " << "a.out" << std::endl;
+              return EXIT_FAILURE;
+            }
+            bf.emit(ofs, targetType);
+          }
+          break;
+        default:
+          assert(false);
+      }
+      return EXIT_SUCCESS;
     }
 
     for (const auto& filename : args) {
@@ -105,4 +133,20 @@ main(int argc, const char* argv[])
     std::cerr << e.what() << std::endl;
   }
   return EXIT_SUCCESS;
+}
+
+
+std::string
+removeDirectoryPart(const std::string& filepath)
+{
+  std::string::size_type pos = filepath.find_last_of('/');
+  return pos == std::string::npos ? filepath : filepath.substr(pos + 1);
+}
+
+
+std::string
+removeSuffix(const std::string& filename)
+{
+  std::string::size_type pos = filename.find_last_of('.');
+  return pos == std::string::npos ? (filename + ".") : filename.substr(0, pos);
 }
