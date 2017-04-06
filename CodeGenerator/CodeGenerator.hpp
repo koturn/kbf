@@ -259,6 +259,7 @@ protected:
 
 
 #include "GeneratorC.hpp"
+#include "GeneratorElfX86.hpp"
 #include "GeneratorElfX64.hpp"
 
 

@@ -22,6 +22,7 @@ main(int argc, const char* argv[])
   std::unordered_map<std::string, Brainfuck::Target> targetMap{
     {"c", Brainfuck::Target::kC},
     {"xbyakc", Brainfuck::Target::kXbyakC},
+    {"elfx86", Brainfuck::Target::kElfX86},
     {"elfx64", Brainfuck::Target::kElfX64}
   };
 
@@ -33,6 +34,7 @@ main(int argc, const char* argv[])
         "Specify target language" + ap.getNewlineDescription()
         + "- c:      Transpile to C source" + ap.getNewlineDescription()
         + "- xbyakc: Dump xbyak code as C source" + ap.getNewlineDescription()
+        + "- elfx86: Compile to x86 ELF binary" + ap.getNewlineDescription()
         + "- elfx64: Compile to x64 ELF binary",
         "TARGET", "");
     ap.add('O', "optimize", ArgumentParser::OptionType::kRequiredArgument,
@@ -99,6 +101,7 @@ main(int argc, const char* argv[])
         case Brainfuck::Target::kXbyakC:
           bf.emit(std::cout, targetType);
           break;
+        case Brainfuck::Target::kElfX86:
         case Brainfuck::Target::kElfX64:
           {
             std::ofstream ofs(basename + ".out", std::ios::binary);
