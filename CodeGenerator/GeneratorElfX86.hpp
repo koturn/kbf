@@ -46,9 +46,13 @@ protected:
 
     // - - - - - The start of program body - - - - - //
     // mov ecx, {kBssAddr}
-    u8 opcode[] = {0xb9};
-    write(opcode);
+    u8 opcode1[] = {0xb9};
+    write(opcode1);
     write(static_cast<u32>(kBssAddr));
+    // mov edx, 0x01
+    u8 opcode2[] = {0xba};
+    write(opcode2);
+    write(static_cast<u32>(0x01));
   }
 
   void
@@ -62,10 +66,9 @@ protected:
     u8 opcode1[] = {0xb8};
     write(opcode1);
     write(static_cast<u32>(0x01));
-    // mov ebx, 0x00
-    u8 opcode2[] = {0xbb};
+    // xor ebx, ebx
+    u8 opcode2[] = {0x31, 0xdb};
     write(opcode2);
-    write(static_cast<u32>(0x00));
     // int 0x80
     u8 opcode3[] = {0xcd, 0x80};
     write(opcode3);
@@ -249,17 +252,13 @@ protected:
     u8 opcode1[] = {0xb8};
     write(opcode1);
     write(static_cast<u32>(0x04));
-    // mov edx, 0x01
-    u8 opcode2[] = {0xba};
+    // mov ebx, 0x01
+    u8 opcode2[] = {0xbb};
     write(opcode2);
     write(static_cast<u32>(0x01));
-    // mov ebx, 0x01
-    u8 opcode3[] = {0xbb};
-    write(opcode3);
-    write(static_cast<u32>(0x01));
     // int 0x80
-    u8 opcode4[] = {0xcd, 0x80};
-    write(opcode4);
+    u8 opcode3[] = {0xcd, 0x80};
+    write(opcode3);
   }
 
   void
@@ -269,17 +268,12 @@ protected:
     u8 opcode1[] = {0xb8};
     write(opcode1);
     write(static_cast<u32>(0x03));
-    // mov edx, 0x01
-    u8 opcode2[] = {0xba};
+    // xor ebx, ebx
+    u8 opcode2[] = {0x31, 0xdb};
     write(opcode2);
-    write(static_cast<u32>(0x01));
-    // mov ebx, 0x01
-    u8 opcode3[] = {0xbb};
-    write(opcode3);
-    write(static_cast<u32>(0x00));
     // int 0x80
-    u8 opcode4[] = {0xcd, 0x80};
-    write(opcode4);
+    u8 opcode3[] = {0xcd, 0x80};
+    write(opcode3);
   }
 
   void
@@ -323,7 +317,7 @@ protected:
   void
   emitEndIfImpl() CODE_GENERATOR_NOEXCEPT
   {
-    // fill loop start
+    // fill if jump
     std::ostream::pos_type pos = loopStack.top();
     std::ostream::pos_type curPos = oStreamPtr->tellp();
     oStreamPtr->seekp(pos + static_cast<std::ostream::pos_type>(5), std::ios_base::beg);
@@ -436,7 +430,6 @@ const Elf32_Addr GeneratorElfX86::kTextAddr = 0x04048000;
 const Elf32_Addr GeneratorElfX86::kBssAddr = 0x04248000;
 const Elf32_Off GeneratorElfX86::kHeaderSize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * 2;
 const Elf32_Off GeneratorElfX86::kFooterSize = sizeof(Elf32_Shdr) * 4;
-
 
 
 #endif  // GENERATOR_ELF_X86_HPP

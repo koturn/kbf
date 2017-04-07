@@ -20,13 +20,13 @@ class GeneratorElfX64 : public BinaryGenerator<GeneratorElfX64>
 private:
   friend class CodeGenerator<GeneratorElfX64>;
   //! Address of .text section
-  static const std::size_t kTextAddr;
+  static const Elf64_Addr kTextAddr;
   //! Address of .bss section
-  static const std::size_t kBssAddr;
+  static const Elf64_Addr kBssAddr;
   //! Program header size
-  static const std::size_t kHeaderSize;
+  static const Elf64_Off kHeaderSize;
   //! Program footer size
-  static const std::size_t kFooterSize;
+  static const Elf64_Off kFooterSize;
 
 public:
   GeneratorElfX64(std::ostream& oStream) :
@@ -46,9 +46,13 @@ protected:
 
     // - - - - - The start of program body - - - - - //
     // movabs rsi, {kBssAddr}
-    u8 opcode[] = {0x48, 0xbe};
-    write(opcode);
+    u8 opcode1[] = {0x48, 0xbe};
+    write(opcode1);
     write(static_cast<u64>(kBssAddr));
+    // mov edx, 0x01
+    u8 opcode2[] = {0xba};
+    write(opcode2);
+    write(static_cast<u32>(0x01));
   }
 
   void
@@ -62,10 +66,9 @@ protected:
     u8 opcode1[] = {0xb8};
     write(opcode1);
     write(static_cast<u32>(0x3c));
-    // mov edi, 0x00
-    u8 opcode2[] = {0xbf};
+    // xor edi, edi
+    u8 opcode2[] = {0x31, 0xff};
     write(opcode2);
-    write(static_cast<u32>(0x00));
     // syscall
     u8 opcode3[] = {0x0f, 0x05};
     write(opcode3);
@@ -249,17 +252,13 @@ protected:
     u8 opcode1[] = {0x48, 0xc7, 0xc0};
     write(opcode1);
     write(static_cast<u32>(0x01));
-    // mov edx, 0x01
-    u8 opcode2[] = {0xba};
+    // mov edi, 0x01
+    u8 opcode2[] = {0xbf};
     write(opcode2);
     write(static_cast<u32>(0x01));
-    // mov edi, 0x01
-    u8 opcode3[] = {0xbf};
-    write(opcode3);
-    write(static_cast<u32>(0x01));
     // syscall
-    u8 opcode4[] = {0x0f, 0x05};
-    write(opcode4);
+    u8 opcode3[] = {0x0f, 0x05};
+    write(opcode3);
   }
 
   void
@@ -269,17 +268,12 @@ protected:
     u8 opcode1[] = {0x48, 0xc7, 0xc0};
     write(opcode1);
     write(static_cast<u32>(0x00));
-    // mov edx, 0x01
-    u8 opcode2[] = {0xba};
+    // xor edi, edi
+    u8 opcode2[] = {0x31, 0xff};
     write(opcode2);
-    write(static_cast<u32>(0x01));
-    // mov edi, 0x00
-    u8 opcode3[] = {0xbf};
-    write(opcode3);
-    write(static_cast<u32>(0x00));
     // syscall
-    u8 opcode4[] = {0x0f, 0x05};
-    write(opcode4);
+    u8 opcode3[] = {0x0f, 0x05};
+    write(opcode3);
   }
 
   void
@@ -322,7 +316,7 @@ protected:
   void
   emitEndIfImpl() CODE_GENERATOR_NOEXCEPT
   {
-    // fill loop start
+    // fill if jump
     std::ostream::pos_type pos = loopStack.top();
     std::ostream::pos_type curPos = oStreamPtr->tellp();
     oStreamPtr->seekp(pos + static_cast<std::ostream::pos_type>(5), std::ios_base::beg);
@@ -431,11 +425,10 @@ protected:
 };  // class GeneratorElfX64
 
 
-const std::size_t GeneratorElfX64::kTextAddr = 0x04048000;
-const std::size_t GeneratorElfX64::kBssAddr = 0x04248000;
-const std::size_t GeneratorElfX64::kHeaderSize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2;
-const std::size_t GeneratorElfX64::kFooterSize = sizeof(Elf64_Shdr) * 4;
-
+const Elf64_Addr GeneratorElfX64::kTextAddr = 0x04048000;
+const Elf64_Addr GeneratorElfX64::kBssAddr = 0x04248000;
+const Elf64_Off GeneratorElfX64::kHeaderSize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2;
+const Elf64_Off GeneratorElfX64::kFooterSize = sizeof(Elf64_Shdr) * 4;
 
 
 #endif  // GENERATOR_ELF_X64_HPP
