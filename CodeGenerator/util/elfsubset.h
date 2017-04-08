@@ -71,6 +71,7 @@
 #define ELFOSABI_OPENVMS     13   /* Open VMS */
 #define ELFOSABI_NSK         14   /* HP Non-Stop Kernel */
 #define ELFOSABI_AROS        15   /* Amiga Research OS */
+#define ELFOSABI_ARM_AEABI   64   /* ARM EABI */
 #define ELFOSABI_ARM         97   /* ARM */
 #define ELFOSABI_STANDALONE  255  /* Standalone (embedded) application */
 
@@ -306,6 +307,9 @@
 #  include <elf.h>
 #elif defined(__CYGWIN__)
 #  include <sys/elf32.h>
+#  ifndef ELFOSABI_ARM_EABI
+#    define ELFOSABI_ARM_AEABI 64
+#  endif
 #else
 /*
  * ELF definitions common to all 32-bit architectures.

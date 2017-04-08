@@ -23,7 +23,8 @@ main(int argc, const char* argv[])
     {"c", Brainfuck::Target::kC},
     {"xbyakc", Brainfuck::Target::kXbyakC},
     {"elfx86", Brainfuck::Target::kElfX86},
-    {"elfx64", Brainfuck::Target::kElfX64}
+    {"elfx64", Brainfuck::Target::kElfX64},
+    {"elfarmeabi", Brainfuck::Target::kElfArmeabi}
   };
 
   try {
@@ -103,6 +104,7 @@ main(int argc, const char* argv[])
           break;
         case Brainfuck::Target::kElfX86:
         case Brainfuck::Target::kElfX64:
+        case Brainfuck::Target::kElfArmeabi:
           {
             std::ofstream ofs(basename + ".out", std::ios::binary);
             if (!ofs.is_open()) {

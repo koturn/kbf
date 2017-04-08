@@ -261,6 +261,7 @@ protected:
 #include "GeneratorC.hpp"
 #include "GeneratorElfX86.hpp"
 #include "GeneratorElfX64.hpp"
+#include "GeneratorElfArmeabi.hpp"
 
 
 #endif  // CODE_GENERATOR_HPP
