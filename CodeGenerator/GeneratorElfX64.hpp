@@ -20,9 +20,13 @@ class GeneratorElfX64 : public BinaryGenerator<GeneratorElfX64>
 private:
   friend class CodeGenerator<GeneratorElfX64>;
   //! Address of .text section
-  static const Elf64_Addr kTextAddr;
+  static const Elf64_Addr kBaseAddr;
   //! Address of .bss section
   static const Elf64_Addr kBssAddr;
+  //! Number of program headers
+  static const Elf64_Half kNProgramHeaders;
+  //! Number of section headers
+  static const Elf64_Half kNSectionHeaders;
   //! Program header size
   static const Elf64_Off kHeaderSize;
   //! Program footer size
@@ -112,7 +116,7 @@ protected:
     shdr.sh_name = 1;
     shdr.sh_type = SHT_PROGBITS;
     shdr.sh_flags = SHF_EXECINSTR | SHF_ALLOC;
-    shdr.sh_addr = kTextAddr + kHeaderSize;
+    shdr.sh_addr = kBaseAddr + kHeaderSize;
     shdr.sh_offset = kHeaderSize;
     shdr.sh_size = codeSize;
     shdr.sh_link = 0x00000000;
@@ -152,15 +156,15 @@ protected:
     ehdr.e_type = ET_EXEC;
     ehdr.e_machine = EM_X86_64;
     ehdr.e_version = EV_CURRENT;
-    ehdr.e_entry = kTextAddr + kHeaderSize;
+    ehdr.e_entry = kBaseAddr + kHeaderSize;
     ehdr.e_phoff = sizeof(Elf64_Ehdr);
     ehdr.e_shoff = kHeaderSize + sizeof(kShStrTbl) + codeSize;
     ehdr.e_flags = 0x00000000;
     ehdr.e_ehsize = sizeof(Elf64_Ehdr);
     ehdr.e_phentsize = sizeof(Elf64_Phdr);
-    ehdr.e_phnum = 2;
+    ehdr.e_phnum = kNProgramHeaders;
     ehdr.e_shentsize = sizeof(Elf64_Shdr);
-    ehdr.e_shnum = 4;
+    ehdr.e_shnum = kNSectionHeaders;
     ehdr.e_shstrndx = 1;
     write(ehdr);
 
@@ -169,8 +173,8 @@ protected:
     phdr.p_type = PT_LOAD;
     phdr.p_flags = PF_R | PF_X;
     phdr.p_offset = 0x0000000000000000;
-    phdr.p_vaddr = kTextAddr;
-    phdr.p_paddr = kTextAddr;
+    phdr.p_vaddr = kBaseAddr;
+    phdr.p_paddr = kBaseAddr;
     phdr.p_filesz = kHeaderSize + sizeof(kShStrTbl) + kFooterSize + codeSize;
     phdr.p_memsz = kHeaderSize + sizeof(kShStrTbl) + kFooterSize + codeSize;
     phdr.p_align = 0x0000000000000100;
@@ -194,26 +198,37 @@ protected:
   emitMovePointerImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
     if (op1 > 0) {
-      if (op1 == 1) {
-        // inc rsi
-        u8 opcode[] = {0x48, 0xff, 0xc6};
-        write(opcode);
-      } else {
+      if (op1 > 127) {
         // add rsi, {op1}
         u8 opcode[] = {0x48, 0x81, 0xc6};
         write(opcode);
         write(op1);
+      } else if (op1 > 1) {
+        // add rsi, {op1}
+        u8 opcode[] = {0x48, 0x83, 0xc6};
+        write(opcode);
+        write(static_cast<u8>(op1));
+      } else {
+        // inc rsi
+        u8 opcode[] = {0x48, 0xff, 0xc6};
+        write(opcode);
       }
     } else {
-      if (op1 == -1) {
-        // dec rsi
-        u8 opcode[] = {0x48, 0xff, 0xce};
-        write(opcode);
-      } else {
+      int rop1 = -op1;
+      if (rop1 > 127) {
         // sub rsi, {op1}
         u8 opcode[] = {0x48, 0x81, 0xee};
         write(opcode);
         write(-op1);
+      } else if (rop1 > 1) {
+        // sub rsi, {op1}
+        u8 opcode[] = {0x48, 0x83, 0xee};
+        write(opcode);
+        write(static_cast<u8>(-op1));
+      } else {
+        // dec rsi
+        u8 opcode[] = {0x48, 0xff, 0xce};
+        write(opcode);
       }
     }
   }
@@ -222,26 +237,27 @@ protected:
   emitAddImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
     if (op1 > 0) {
-      if (op1 == 1) {
-        // inc byte ptr [rsi]
-        u8 opcode[] = {0xfe, 0x06};
-        write(opcode);
-      } else {
+      if (op1 > 1) {
         // add byte ptr [rsi], {op1}
         u8 opcode[] = {0x80, 0x06};
         write(opcode);
         write(static_cast<u8>(op1));
+      } else {
+        // inc byte ptr [rsi]
+        u8 opcode[] = {0xfe, 0x06};
+        write(opcode);
       }
     } else {
-      if (op1 == -1) {
-        // dec byte ptr [rsi]
-        u8 opcode[] = {0xfe, 0x0e};
-        write(opcode);
-      } else {
+      int rop1 = -op1;
+      if (rop1 > 1) {
         // sub byte ptr [rsi], {op1}
         u8 opcode[] = {0x80, 0x2e};
         write(opcode);
         write(static_cast<u8>(-op1));
+      } else {
+        // dec byte ptr [rsi]
+        u8 opcode[] = {0xfe, 0x0e};
+        write(opcode);
       }
     }
   }
@@ -426,10 +442,12 @@ protected:
 };  // class GeneratorElfX64
 
 
-const Elf64_Addr GeneratorElfX64::kTextAddr = 0x04048000;
+const Elf64_Addr GeneratorElfX64::kBaseAddr = 0x04048000;
 const Elf64_Addr GeneratorElfX64::kBssAddr = 0x04248000;
-const Elf64_Off GeneratorElfX64::kHeaderSize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * 2;
-const Elf64_Off GeneratorElfX64::kFooterSize = sizeof(Elf64_Shdr) * 4;
+const Elf64_Half GeneratorElfX64::kNProgramHeaders = 2;
+const Elf64_Half GeneratorElfX64::kNSectionHeaders = 4;
+const Elf64_Off GeneratorElfX64::kHeaderSize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * kNProgramHeaders;
+const Elf64_Off GeneratorElfX64::kFooterSize = sizeof(Elf64_Shdr) * kNSectionHeaders;
 
 
 #endif  // GENERATOR_ELF_X64_HPP

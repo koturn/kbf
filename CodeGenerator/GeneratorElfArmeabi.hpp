@@ -20,9 +20,13 @@ class GeneratorElfArmeabi : public BinaryGenerator<GeneratorElfArmeabi>
 private:
   friend class CodeGenerator<GeneratorElfArmeabi>;
   //! Address of .text section
-  static const Elf32_Addr kTextAddr;
+  static const Elf32_Addr kBaseAddr;
   //! Address of .bss section
   static const Elf32_Addr kBssAddr;
+  //! Number of program headers
+  static const Elf32_Half kNProgramHeaders;
+  //! Number of section headers
+  static const Elf32_Half kNSectionHeaders;
   //! Program header size
   static const Elf32_Off kHeaderSize;
   //! Program footer size
@@ -114,7 +118,7 @@ protected:
     shdr.sh_name = 1;
     shdr.sh_type = SHT_PROGBITS;
     shdr.sh_flags = SHF_EXECINSTR | SHF_ALLOC;
-    shdr.sh_addr = kTextAddr + kHeaderSize;
+    shdr.sh_addr = kBaseAddr + kHeaderSize;
     shdr.sh_offset = kHeaderSize;
     shdr.sh_size = codeSize;
     shdr.sh_link = 0x00000000;
@@ -154,15 +158,15 @@ protected:
     ehdr.e_type = ET_EXEC;
     ehdr.e_machine = EM_ARM;
     ehdr.e_version = EV_CURRENT;
-    ehdr.e_entry = kTextAddr + kHeaderSize;
+    ehdr.e_entry = kBaseAddr + kHeaderSize;
     ehdr.e_phoff = sizeof(Elf32_Ehdr);
     ehdr.e_shoff = static_cast<Elf32_Off>(kHeaderSize + sizeof(kShStrTbl) + codeSize);
     ehdr.e_flags = 0x00000000;
     ehdr.e_ehsize = sizeof(Elf32_Ehdr);
     ehdr.e_phentsize = sizeof(Elf32_Phdr);
-    ehdr.e_phnum = 2;
+    ehdr.e_phnum = kNProgramHeaders;
     ehdr.e_shentsize = sizeof(Elf32_Shdr);
-    ehdr.e_shnum = 4;
+    ehdr.e_shnum = kNSectionHeaders;
     ehdr.e_shstrndx = 1;
     write(ehdr);
 
@@ -171,8 +175,8 @@ protected:
     phdr.p_type = PT_LOAD;
     phdr.p_flags = PF_R | PF_X;
     phdr.p_offset = 0x00000000;
-    phdr.p_vaddr = kTextAddr;
-    phdr.p_paddr = kTextAddr;
+    phdr.p_vaddr = kBaseAddr;
+    phdr.p_paddr = kBaseAddr;
     phdr.p_filesz = static_cast<Elf32_Word>(kHeaderSize + sizeof(kShStrTbl) + kFooterSize + codeSize);
     phdr.p_memsz = static_cast<Elf32_Word>(kHeaderSize + sizeof(kShStrTbl) + kFooterSize + codeSize);
     phdr.p_align = 0x00000100;
@@ -222,7 +226,7 @@ protected:
         u32 opcode2 = 0xea000000;
         write(opcode2);
         // {op1} (const)
-        write(static_cast<u32>(op1));
+        write(static_cast<u32>(-op1));
         // sub r1, r1, r8
         u32 opcode3 = 0xe0411008;
         write(opcode3);
@@ -438,10 +442,12 @@ protected:
 };  // class GeneratorElfArmeabi
 
 
-const Elf32_Addr GeneratorElfArmeabi::kTextAddr = 0x00010000;
+const Elf32_Addr GeneratorElfArmeabi::kBaseAddr = 0x00010000;
 const Elf32_Addr GeneratorElfArmeabi::kBssAddr = 0x00210000;
-const Elf32_Off GeneratorElfArmeabi::kHeaderSize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * 2;
-const Elf32_Off GeneratorElfArmeabi::kFooterSize = sizeof(Elf32_Shdr) * 4;
+const Elf32_Half GeneratorElfArmeabi::kNProgramHeaders = 2;
+const Elf32_Half GeneratorElfArmeabi::kNSectionHeaders = 4;
+const Elf32_Off GeneratorElfArmeabi::kHeaderSize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders;
+const Elf32_Off GeneratorElfArmeabi::kFooterSize = sizeof(Elf32_Shdr) * kNSectionHeaders;
 
 
 #endif  // GENERATOR_ELF_ARMEABI_HPP
