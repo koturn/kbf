@@ -138,6 +138,7 @@ protected:
     oStreamPtr->seekp(0, std::ios_base::beg);
     // ELF header
     Elf32_Ehdr ehdr;
+    std::fill_n(ehdr.e_ident, sizeof(ehdr.e_ident), 0x00);
     ehdr.e_ident[EI_MAG0] = ELFMAG0;
     ehdr.e_ident[EI_MAG1] = ELFMAG1;
     ehdr.e_ident[EI_MAG2] = ELFMAG2;
