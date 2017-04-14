@@ -334,15 +334,25 @@
 #    include <stdint.h>
 #  endif
 // Clone from WinDef.h in MSVC 2012
-typedef uint32_t  DWORD;
 typedef uint8_t   BYTE;
 typedef uint16_t  WORD;
+typedef uint32_t  DWORD;
+typedef uint64_t  ULONGLONG;
+typedef int32_t   LONG;
 
 
-#define IMAGE_DOS_SIGNATURE      0x4D5A      // MZ
-#define IMAGE_OS2_SIGNATURE      0x4E45      // NE
-#define IMAGE_OS2_SIGNATURE_LE   0x4C45      // LE
-#define IMAGE_NT_SIGNATURE       0x50450000  // PE00
+#ifndef _MAC
+#  define IMAGE_DOS_SIGNATURE     0x5A4D      // MZ
+#  define IMAGE_OS2_SIGNATURE     0x454E      // NE
+#  define IMAGE_OS2_SIGNATURE_LE  0x454C      // LE
+#  define IMAGE_VXD_SIGNATURE     0x454C      // LE
+#  define IMAGE_NT_SIGNATURE      0x00004550  // PE00
+#else
+#  define IMAGE_DOS_SIGNATURE     0x4D5A      // MZ
+#  define IMAGE_OS2_SIGNATURE     0x4E45      // NE
+#  define IMAGE_OS2_SIGNATURE_LE  0x4C45      // LE
+#  define IMAGE_NT_SIGNATURE      0x50450000  // PE00
+#endif
 
 typedef struct _IMAGE_DOS_HEADER {  // DOS .EXE header
   WORD e_magic;                     // Magic number
@@ -521,6 +531,22 @@ typedef struct _IMAGE_OPTIONAL_HEADER64 {
 #define IMAGE_NT_OPTIONAL_HDR64_MAGIC  0x20b
 #define IMAGE_ROM_OPTIONAL_HDR_MAGIC   0x107
 
+// Subsystem Values
+#define IMAGE_SUBSYSTEM_UNKNOWN              0   // Unknown subsystem.
+#define IMAGE_SUBSYSTEM_NATIVE               1   // Image doesn't require a subsystem.
+#define IMAGE_SUBSYSTEM_WINDOWS_GUI          2   // Image runs in the Windows GUI subsystem.
+#define IMAGE_SUBSYSTEM_WINDOWS_CUI          3   // Image runs in the Windows character subsystem.
+#define IMAGE_SUBSYSTEM_OS2_CUI              5   // image runs in the OS/2 character subsystem.
+#define IMAGE_SUBSYSTEM_POSIX_CUI            7   // image runs in the Posix character subsystem.
+#define IMAGE_SUBSYSTEM_NATIVE_WINDOWS       8   // image is a native Win9x driver.
+#define IMAGE_SUBSYSTEM_WINDOWS_CE_GUI       9   // Image runs in the Windows CE subsystem.
+#define IMAGE_SUBSYSTEM_EFI_APPLICATION      10  //
+#define IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER  11   //
+#define IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER   12  //
+#define IMAGE_SUBSYSTEM_EFI_ROM              13
+#define IMAGE_SUBSYSTEM_XBOX                 14
+#define IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION 16
+
 
 //
 // Section header format.
@@ -607,7 +633,7 @@ typedef struct _IMAGE_IMPORT_DESCRIPTOR {
   union {
     DWORD Characteristics;     // 0 for terminating null import descriptor
     DWORD OriginalFirstThunk;  // RVA to original unbound IAT (PIMAGE_THUNK_DATA)
-  } DUMMYUNIONNAME;
+  };
   DWORD   TimeDateStamp;       // 0 if not bound,
                                // -1 if bound, and real date\time stamp
                                //     in IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT (new BIND)
@@ -616,7 +642,7 @@ typedef struct _IMAGE_IMPORT_DESCRIPTOR {
   DWORD   Name;
   DWORD   FirstThunk;          // RVA to IAT (if bound this IAT has actual addresses)
 } IMAGE_IMPORT_DESCRIPTOR;
-typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;
+typedef IMAGE_IMPORT_DESCRIPTOR *PIMAGE_IMPORT_DESCRIPTOR;
 
 
 typedef struct _IMAGE_THUNK_DATA64 {
