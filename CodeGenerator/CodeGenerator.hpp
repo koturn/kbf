@@ -260,6 +260,7 @@ protected:
 
 #include "GeneratorC.hpp"
 #include "GeneratorWinX86.hpp"
+#include "GeneratorWinX64.hpp"
 #include "GeneratorElfX86.hpp"
 #include "GeneratorElfX64.hpp"
 #include "GeneratorElfArmeabi.hpp"

@@ -1,10 +1,10 @@
 /*!
- * @file GeneratorWinX86.hpp
- * @brief x86 Windows exe binary generator
+ * @file GeneratorWinX64.hpp
+ * @brief x64 Windows exe binary generator
  * @author koturn
  */
-#ifndef GENERATOR_WIN_X86_HPP
-#define GENERATOR_WIN_X86_HPP
+#ifndef GENERATOR_WIN_X64_HPP
+#define GENERATOR_WIN_X64_HPP
 
 #include <cstring>
 #include <iostream>
@@ -14,22 +14,20 @@
 
 
 /*!
- * @brief x86 Windows exe binary generator
+ * @brief x64 Windows exe binary generator
  */
-class GeneratorWinX86 : public BinaryGenerator<GeneratorWinX86>
+class GeneratorWinX64 : public BinaryGenerator<GeneratorWinX64>
 {
 private:
-  friend class CodeGenerator<GeneratorWinX86>;
+  friend class CodeGenerator<GeneratorWinX64>;
   //! Address of .text section
-  static const DWORD kBaseAddr;
-  //! Size of PE header with padding
+  static const ULONGLONG kBaseAddr;
   static const DWORD kPeHeaderSizeWithPadding;
-  //! Size of .idata with padding
   static const DWORD kIdataSizeWithPadding;
 
 public:
-  GeneratorWinX86(std::ostream& oStream) :
-    BinaryGenerator<GeneratorWinX86>(oStream)
+  GeneratorWinX64(std::ostream& oStream) :
+    BinaryGenerator<GeneratorWinX64>(oStream)
   {}
 
 protected:
@@ -41,16 +39,20 @@ protected:
     write(padding);
 
     // - - - - - The start of program body - - - - - //
-    // mov esi, ds:{0x********}  # putchar() address
-    u8 opcode1[] = {0x8b, 0x35};
+    write<u8>(0x56);
+    write<u8>(0x57);
+    write<u8>(0x55);
+
+    // mov rsi,ds:{0x********}  # putchar() address
+    u8 opcode1[] = {0x48, 0x8b, 0x34, 0x25};
     write(opcode1);
     write<u32>(0x00000000);  // Fill after
-    // mov edi, ds:{0x********}  # getchar() address
-    u8 opcode2[] = {0x8b, 0x3d};
+    // mov rdi,ds:{0x********}  # getchar() address
+    u8 opcode2[] = {0x48, 0x8b, 0x3c, 0x25};
     write(opcode2);
     write<u32>(0x00000000);  // Fill after
-    // mov ecx, {0x********}  # .bss address
-    u8 opcode3[] = {0xb9};
+    // mov rbx, {0x********}  # .bss address
+    u8 opcode3[] = {0x48, 0xc7, 0xc3};
     write(opcode3);
     write<u32>(0x00000000);  // Fill after
   }
@@ -62,18 +64,25 @@ protected:
     emitAssignImpl('\n');
     emitPutcharImpl();
 
-    // mov esi, ds:{0x********}  # exit
-    u8 opcode1[] = {0x8b, 0x35};
-    write(opcode1);
+    write<u8>(0x5d);
+    write<u8>(0x5f);
+    write<u8>(0x5e);
+
+    // xor ecx, ecx
+    u8 opcode2[] = {0x31, 0xc9};
+    write(opcode2);
+    // mov rsi, ds:{0x********}  # exit
+    u8 opcode3[] = {0x48, 0x8b, 0x34, 0x25};
+    write(opcode3);
     std::ostream::pos_type exitAddrPos = oStreamPtr->tellp();
     write<u32>(0x00000000);  // Fill after
-    // push 0x00
-    u8 opcode3[] = {0x6a};
-    write(opcode3);
-    write<u8>(0x00);
-    // call esi (exit)
-    u8 opcode4[] = {0xff, 0xd6};
+    // sub rsp, 0x20
+    u8 opcode4[] = {0x48, 0x83, 0xec};
     write(opcode4);
+    write<u8>(0x20);
+    // call rsi
+    u8 opcode5[] = {0xff, 0xd6};
+    write(opcode5);
 
     // Write padding
     DWORD codeSize = static_cast<DWORD>(oStreamPtr->tellp()) - (kPeHeaderSizeWithPadding + kIdataSizeWithPadding);
@@ -117,22 +126,21 @@ protected:
     // Write image file header
     write<DWORD>(IMAGE_NT_SIGNATURE);
     IMAGE_FILE_HEADER ifh;
-    ifh.Machine = IMAGE_FILE_MACHINE_I386;  // 0x014c
+    ifh.Machine = IMAGE_FILE_MACHINE_AMD64;  // 0x8664
     ifh.NumberOfSections = 3;
     ifh.TimeDateStamp = 0;
     ifh.PointerToSymbolTable = 0;
     ifh.NumberOfSymbols = 0;
-    ifh.SizeOfOptionalHeader = sizeof(IMAGE_OPTIONAL_HEADER32);
+    ifh.SizeOfOptionalHeader = sizeof(IMAGE_OPTIONAL_HEADER64);
     ifh.Characteristics = IMAGE_FILE_RELOCS_STRIPPED
       | IMAGE_FILE_EXECUTABLE_IMAGE
       | IMAGE_FILE_LINE_NUMS_STRIPPED
       | IMAGE_FILE_LOCAL_SYMS_STRIPPED
-      | IMAGE_FILE_32BIT_MACHINE
       | IMAGE_FILE_DEBUG_STRIPPED;
     write(ifh);
 
-    IMAGE_OPTIONAL_HEADER32 ioh;
-    ioh.Magic = IMAGE_NT_OPTIONAL_HDR32_MAGIC;
+    IMAGE_OPTIONAL_HEADER64 ioh;
+    ioh.Magic = IMAGE_NT_OPTIONAL_HDR64_MAGIC;
     ioh.MajorLinkerVersion = 14;
     ioh.MinorLinkerVersion = 0;
     ioh.SizeOfCode = codeSizeWithPadding;
@@ -140,7 +148,6 @@ protected:
     ioh.SizeOfUninitializedData = 65536;
     ioh.AddressOfEntryPoint = 0x1000;
     ioh.BaseOfCode = 0x1000;
-    ioh.BaseOfData = ioh.BaseOfCode + codeSizeWithPadding;
     ioh.ImageBase = kBaseAddr;
     ioh.SectionAlignment = 0x1000;
     ioh.FileAlignment = 0x0200;
@@ -196,7 +203,7 @@ protected:
     ishIdata.PointerToRelocations = 0x00000000;
     ishIdata.PointerToLinenumbers = 0x00000000;
     ishIdata.NumberOfRelocations = 0x0000;
-    ishIdata.NumberOfLinenumbers = 0x0000;
+    ishIdata.NumberOfLinenumbers = 0x00000;
     ishIdata.Characteristics = IMAGE_SCN_CNT_INITIALIZED_DATA
       | IMAGE_SCN_ALIGN_4BYTES
       | IMAGE_SCN_MEM_READ
@@ -213,14 +220,14 @@ protected:
     ishBss.PointerToRelocations = 0x00000000;
     ishBss.PointerToLinenumbers = 0x00000000;
     ishBss.NumberOfRelocations = 0x0000;
-    ishBss.NumberOfLinenumbers = 0x0000;
+    ishBss.NumberOfLinenumbers = 0x00000;
     ishBss.Characteristics = IMAGE_SCN_CNT_UNINITIALIZED_DATA
       | IMAGE_SCN_ALIGN_8BYTES
       | IMAGE_SCN_MEM_READ
       | IMAGE_SCN_MEM_WRITE;
     write(ishBss);
 
-    oStreamPtr->seekp(kPeHeaderSizeWithPadding, std::ios_base::beg);
+    oStreamPtr->seekp(0x200, std::ios_base::beg);
 
     const char kDllName[] = "msvcrt.dll\0\0\0\0\0";
     const char kPutcharName[] = "putchar";
@@ -228,7 +235,7 @@ protected:
     const char kExitName[] = "exit\0\0\0";
 
     IMAGE_IMPORT_DESCRIPTOR iids[2];
-    IMAGE_THUNK_DATA32 itdInts[4];
+    IMAGE_THUNK_DATA64 itdInts[4];
 
     iids[0].OriginalFirstThunk = static_cast<u32>(ishIdata.VirtualAddress + sizeof(iids));  // int
     iids[0].TimeDateStamp = 0x00000000;
@@ -248,7 +255,7 @@ protected:
     itdInts[3].u1.AddressOfData = 0x00000000;
     write(itdInts);  // write INT (import Name Table)
     write(kDllName);
-    write(itdInts);  // IAT (Import Address Table) is same as INT
+    write(itdInts);  // IAT (Import Address Table) is Same as INT
 
     write<WORD>(0x0000);
     write(kPutcharName);
@@ -257,13 +264,13 @@ protected:
     write<WORD>(0x0000);
     write(kExitName);
 
-    oStreamPtr->seekp(ishText.PointerToRawData + 0x02, std::ios_base::beg);
+    oStreamPtr->seekp(ishText.PointerToRawData + 0x07, std::ios_base::beg);
     write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk));  // Fill putchar() address
-    oStreamPtr->seekp(ishText.PointerToRawData + 0x08, std::ios_base::beg);
-    write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk + sizeof(DWORD)));  // Fill getchar() address
+    oStreamPtr->seekp(ishText.PointerToRawData + 0x0f, std::ios_base::beg);
+    write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk + sizeof(ULONGLONG)));  // Fill getchar() address
     oStreamPtr->seekp(exitAddrPos, std::ios_base::beg);
-    write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk + sizeof(DWORD) * 2));  // Fill exit() address
-    oStreamPtr->seekp(ishText.PointerToRawData + 0x0d, std::ios_base::beg);
+    write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk + sizeof(ULONGLONG) * 2));  // Fill exit() address
+    oStreamPtr->seekp(ishText.PointerToRawData + 0x16, std::ios_base::beg);
     write(static_cast<u32>(ioh.ImageBase + ishBss.VirtualAddress));  // Fill .bss address
 
     oStreamPtr->seekp(0, std::ios_base::end);
@@ -274,35 +281,35 @@ protected:
   {
     if (op1 > 0) {
       if (op1 > 127) {
-        // add ecx, {op1}
-        u8 opcode[] = {0x81, 0xc1};
+        // add rbx, {op1}
+        u8 opcode[] = {0x48, 0x81, 0xc3};
         write(opcode);
         write(op1);
       } else if (op1 > 1) {
-        // add ecx, {op1}
-        u8 opcode[] = {0x83, 0xc1};
+        // add rbx, {op1}
+        u8 opcode[] = {0x48, 0x83, 0xc3};
         write(opcode);
         write(static_cast<u8>(op1));
       } else {
-        // inc ecx
-        u8 opcode[] = {0x41};
+        // inc rbx
+        u8 opcode[] = {0x48, 0xff, 0xc3};
         write(opcode);
       }
     } else {
       int rop1 = -op1;
       if (rop1 > 127) {
-        // sub ecx, {-op1}
-        u8 opcode[] = {0x81, 0xe9};
+        // sub rbx, {-op1}
+        u8 opcode[] = {0x48, 0x81, 0xeb};
         write(opcode);
         write(rop1);
       } else if (rop1 > 1) {
-        // sub ecx, {-op1}
-        u8 opcode[] = {0x83, 0xe9};
+        // sub rbx, {-op1}
+        u8 opcode[] = {0x48, 0x83, 0xeb};
         write(opcode);
         write(static_cast<u8>(rop1));
       } else {
-        // dec ecx
-        u8 opcode[] = {0x49};
+        // dec rbx
+        u8 opcode[] = {0x48, 0xff, 0xcb};
         write(opcode);
       }
     }
@@ -313,25 +320,25 @@ protected:
   {
     if (op1 > 0) {
       if (op1 > 1) {
-        // add byte ptr [ecx], {op1}
-        u8 opcode[] = {0x80, 0x01};
+        // add byte ptr [rbx], {op1}
+        u8 opcode[] = {0x80, 0x03};
         write(opcode);
         write(static_cast<u8>(op1));
       } else {
-        // inc byte ptr [ecx]
-        u8 opcode[] = {0xfe, 0x01};
+        // inc byte ptr [rbx]
+        u8 opcode[] = {0xfe, 0x03};
         write(opcode);
       }
     } else {
       int rop1 = -op1;
       if (rop1 > 1) {
-        // sub byte ptr [ecx], {op1}
-        u8 opcode[] = {0x80, 0x29};
+        // sub byte ptr [rbx], {-op1}
+        u8 opcode[] = {0x80, 0x2b};
         write(opcode);
         write(static_cast<u8>(rop1));
       } else {
-        // dec byte ptr [ecx]
-        u8 opcode[] = {0xfe, 0x09};
+        // dec byte ptr [rbx]
+        u8 opcode[] = {0xfe, 0x0b};
         write(opcode);
       }
     }
@@ -340,38 +347,47 @@ protected:
   void
   emitPutcharImpl() CODE_GENERATOR_NOEXCEPT
   {
-    write<u8>(0x51);
-    // push byte ptr [ecx]
-    u8 opcode1[] = {0xff, 0x31};
+    // mov rcx, byte ptr [rbx]
+    u8 opcode1[] = {0x48, 0x8b, 0x0b};
     write(opcode1);
-    // call esi (putchar)
-    u8 opcode2[] = {0xff, 0xd6};
+    // sub rsp, 0x20
+    u8 opcode2[] = {0x48, 0x83, 0xec};
     write(opcode2);
-    // pop eax
-    u8 opcode3[] = {0x58};
+    write<u8>(0x20);
+    // call rsi
+    u8 opcode3[] = {0xff, 0xd6};
     write(opcode3);
-    write<u8>(0x59);
+    // add rsp, 0x20
+    u8 opcode4[] = {0x48, 0x83, 0xc4};
+    write(opcode4);
+    write<u8>(0x20);
   }
 
   void
   emitGetcharImpl() CODE_GENERATOR_NOEXCEPT
   {
-    write<u8>(0x51);
-    // call edi (getchar)
-    u8 opcode1[] = {0xff, 0xd7};
+    // sub rsp, 0x20
+    u8 opcode1[] = {0x48, 0x83, 0xec};
     write(opcode1);
-    write<u8>(0x59);
-    // mov byte ptr [ecx], al
-    u8 opcode2[] = {0x88, 0x01};
+    write<u8>(0x20);
+    // call rsi
+    u8 opcode2[] = {0xff, 0xd7};
     write(opcode2);
+    // add rsp, 0x20
+    u8 opcode3[] = {0x48, 0x83, 0xc4};
+    write(opcode3);
+    write<u8>(0x20);
+    // mov byte ptr [rbx]. al
+    u8 opcode4[] = {0x88, 0x03};
+    write(opcode4);
   }
 
   void
   emitLoopStartImpl() CODE_GENERATOR_NOEXCEPT
   {
     loopStack.push(oStreamPtr->tellp());
-    // cmp byte ptr [ecx], 0x00
-    u8 opcode1[] = {0x80, 0x39};
+    // cmp byte ptr [rbx], 0x00
+    u8 opcode1[] = {0x80, 0x3b};
     write(opcode1);
     write(static_cast<u8>(0x00));
     // je 0x********
@@ -387,12 +403,12 @@ protected:
     int offset = static_cast<int>(pos - oStreamPtr->tellp()) - 1;
     if (offset - static_cast<int>(sizeof(u8)) < -128) {
       // jmp {offset} (near jump)
-      u8 opcode = {0xe9};
+      u8 opcode[] = {0xe9};
       write(opcode);
       write(static_cast<u32>(offset - sizeof(u32)));
     } else {
       // jmp {offset} (short jump)
-      u8 opcode = {0xeb};
+      u8 opcode[] = {0xeb};
       write(opcode);
       write(static_cast<u8>(offset - sizeof(u8)));
     }
@@ -419,8 +435,7 @@ protected:
   void
   emitAssignImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
-    // mov byte ptr [ecx], {op1}
-    u8 opcode[] = {0xc6, 0x01};
+    u8 opcode[] = {0xc6, 0x03};
     write(opcode);
     write(static_cast<u8>(op1));
   }
@@ -428,16 +443,16 @@ protected:
   void
   emitAddVarImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
-    // mov al, byte ptr [ecx]
-    u8 opcode1[] = {0x8a, 0x01};
+    // mov al, byte ptr [rbx]
+    u8 opcode1[] = {0x8a, 0x03};
     write(opcode1);
-    // add byte ptr [ecx + {op1}], al
+    // add byte ptr [rbx + {op1}], al
     if (op1 < -128 || 127 < op1) {
-      u8 opcode2[] = {0x00, 0x81};
+      u8 opcode2[] = {0x00, 0x83};
       write(opcode2);
-      write(static_cast<u32>(op1));
+      write(op1);
     } else {
-      u8 opcode2[] = {0x00, 0x41};
+      u8 opcode2[] = {0x00, 0x43};
       write(opcode2);
       write(static_cast<u8>(op1));
     }
@@ -446,16 +461,16 @@ protected:
   void
   emitSubVarImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
-    // mov al, byte ptr [ecx]
-    u8 opcode1[] = {0x8a, 0x01};
+    // mov al, byte ptr [rbx]
+    u8 opcode1[] = {0x8a, 0x03};
     write(opcode1);
     // sub byte ptr [rbx + {op1}], al
     if (op1 < -128 || 127 < op1) {
-      u8 opcode2[] = {0x28, 0x81};
+      u8 opcode2[] = {0x28, 0x83};
       write(opcode2);
-      write(static_cast<u32>(op1));
+      write(op1);
     } else {
-      u8 opcode2[] = {0x28, 0x41};
+      u8 opcode2[] = {0x28, 0x43};
       write(opcode2);
       write(static_cast<u8>(op1));
     }
@@ -469,16 +484,16 @@ protected:
       u8 opcode1[] = {0xb0};
       write(opcode1);
       write(static_cast<u8>(op2));
-      // mul byte ptr [ecx]
-      u8 opcode2[] = {0xf6, 0x21};
+      // mul byte ptr [rbx]
+      u8 opcode2[] = {0xf6, 0x23};
       write(opcode2);
-      // add byte ptr [ecx + {op1}], al
+      // add byte ptr [rbx + {op1}], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x00, 0x81};
+        u8 opcode2[] = {0x00, 0x83};
         write(opcode2);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x00, 0x41};
+        u8 opcode2[] = {0x00, 0x43};
         write(opcode2);
         write(static_cast<u8>(op1));
       }
@@ -487,16 +502,16 @@ protected:
       u8 opcode1[] = {0xb0};
       write(opcode1);
       write(static_cast<u8>(-op2));
-      // mul byte ptr [ecx]
-      u8 opcode2[] = {0xf6, 0x21};
+      // mul byte ptr [rbx]
+      u8 opcode2[] = {0xf6, 0x23};
       write(opcode2);
-      // sub byte ptr [ecx], al
+      // sub byte ptr [rbx], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x28, 0x81};
+        u8 opcode2[] = {0x28, 0x83};
         write(opcode2);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x28, 0x41};
+        u8 opcode2[] = {0x28, 0x43};
         write(opcode2);
         write(static_cast<u8>(op1));
       }
@@ -513,12 +528,12 @@ protected:
     write(static_cast<u8>(-2));
     emitEndIfImpl();
   }
-};  // class GeneratorWinX86
+};  // class GeneratorWinX64
 
 
-const DWORD GeneratorWinX86::kBaseAddr = 0x00400000;
-const DWORD GeneratorWinX86::kPeHeaderSizeWithPadding = 0x0200;
-const DWORD GeneratorWinX86::kIdataSizeWithPadding = 0x0200;
+const ULONGLONG GeneratorWinX64::kBaseAddr = 0x00400000;
+const DWORD GeneratorWinX64::kPeHeaderSizeWithPadding = 0x0200;
+const DWORD GeneratorWinX64::kIdataSizeWithPadding = 0x0200;
 
 
-#endif  // GENERATOR_WIN_X86_HPP
+#endif  // GENERATOR_WIN_X64_HPP

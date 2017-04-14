@@ -23,6 +23,7 @@ main(int argc, const char* argv[])
     {"c", Brainfuck::Target::kC},
     {"xbyakc", Brainfuck::Target::kXbyakC},
     {"winx86", Brainfuck::Target::kWinX86},
+    {"winx64", Brainfuck::Target::kWinX64},
     {"elfx86", Brainfuck::Target::kElfX86},
     {"elfx64", Brainfuck::Target::kElfX64},
     {"elfarmeabi", Brainfuck::Target::kElfArmeabi}
@@ -36,8 +37,11 @@ main(int argc, const char* argv[])
         "Specify target language" + ap.getNewlineDescription()
         + "- c:      Transpile to C source" + ap.getNewlineDescription()
         + "- xbyakc: Dump xbyak code as C source" + ap.getNewlineDescription()
+        + "- winx86: Compile to x86 EXE binary" + ap.getNewlineDescription()
+        + "- winx64: Compile to x64 EXE binary" + ap.getNewlineDescription()
         + "- elfx86: Compile to x86 ELF binary" + ap.getNewlineDescription()
-        + "- elfx64: Compile to x64 ELF binary",
+        + "- elfx64: Compile to x64 ELF binary" + ap.getNewlineDescription()
+        + "- elfarmeabi: Compile to ARM EABI ELF binary",
         "TARGET", "");
     ap.add('O', "optimize", ArgumentParser::OptionType::kRequiredArgument,
         "Specify optimization level" + ap.getNewlineDescription()
@@ -104,6 +108,7 @@ main(int argc, const char* argv[])
           bf.emit(std::cout, targetType);
           break;
         case Brainfuck::Target::kWinX86:
+        case Brainfuck::Target::kWinX64:
           {
             std::ofstream ofs(basename + ".exe", std::ios::binary);
             if (!ofs.is_open()) {

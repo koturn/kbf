@@ -33,6 +33,7 @@
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wconversion"
 #  pragma GCC diagnostic ignored "-Weffc++"
+#  pragma GCC diagnostic ignored "-Wsign-conversion"
 #  if __cplusplus >= 201103L
 #    pragma GCC diagnostic ignored "-Wsuggest-final-methods"
 #    pragma GCC diagnostic ignored "-Wsuggest-final-types"
@@ -122,7 +123,7 @@ public:
    */
   enum class Target
   {
-    kC, kXbyakC, kWinX86, kElfX86, kElfX64, kElfArmeabi
+    kC, kXbyakC, kWinX86, kWinX64, kElfX86, kElfX64, kElfArmeabi
   };  // enum class Target
 #else
   class Target
@@ -133,7 +134,7 @@ public:
      */
     enum TargetEnum
     {
-      kC, kXbyakC, kWinX86, kElfX86, kElfX64, kElfArmeabi
+      kC, kXbyakC, kWinX86, kWinX64, kElfX86, kElfX64, kElfArmeabi
     };
     /*!
      * @brief Ctor for implicit conversion: Actual enum to dummy enum class
@@ -927,6 +928,9 @@ public:
         break;
       case Target::kWinX86:
         GeneratorWinX86(os).emit(ircode);
+        break;
+      case Target::kWinX64:
+        GeneratorWinX64(os).emit(ircode);
         break;
       case Target::kElfX86:
         GeneratorElfX86(os).emit(ircode);
