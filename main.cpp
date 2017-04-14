@@ -22,6 +22,7 @@ main(int argc, const char* argv[])
   std::unordered_map<std::string, Brainfuck::Target> targetMap{
     {"c", Brainfuck::Target::kC},
     {"xbyakc", Brainfuck::Target::kXbyakC},
+    {"winx86", Brainfuck::Target::kWinX86},
     {"elfx86", Brainfuck::Target::kElfX86},
     {"elfx64", Brainfuck::Target::kElfX64},
     {"elfarmeabi", Brainfuck::Target::kElfArmeabi}
@@ -101,6 +102,16 @@ main(int argc, const char* argv[])
         case Brainfuck::Target::kC:
         case Brainfuck::Target::kXbyakC:
           bf.emit(std::cout, targetType);
+          break;
+        case Brainfuck::Target::kWinX86:
+          {
+            std::ofstream ofs(basename + ".exe", std::ios::binary);
+            if (!ofs.is_open()) {
+              std::cerr << "Failed to open: " << "a.out" << std::endl;
+              return EXIT_FAILURE;
+            }
+            bf.emit(ofs, targetType);
+          }
           break;
         case Brainfuck::Target::kElfX86:
         case Brainfuck::Target::kElfX64:

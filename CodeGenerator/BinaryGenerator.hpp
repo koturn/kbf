@@ -27,6 +27,14 @@ protected:
   typedef std::uint32_t u32;
   //! Type alias for std::uint64_t
   typedef std::uint64_t u64;
+
+  template<typename U, typename V>
+  static inline U
+  calcAlignedSize(U size, V alignment) CODE_GENERATOR_NOEXCEPT
+  {
+    return alignment * ((size + alignment - 1) / alignment);
+  }
+
   //! Loop stack
   std::stack<std::ostream::pos_type> loopStack;
 
@@ -48,7 +56,7 @@ protected:
   void
   write(const U* data, std::size_t size) CODE_GENERATOR_NOEXCEPT
   {
-    this->oStreamPtr->write(data, size);
+    this->oStreamPtr->write(reinterpret_cast<const char*>(data), size);
   }
 };  // class BinaryGenerator
 
