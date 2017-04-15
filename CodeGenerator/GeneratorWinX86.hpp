@@ -49,8 +49,8 @@ protected:
     u8 opcode2[] = {0x8b, 0x3d};
     write(opcode2);
     write<u32>(0x00000000);  // Fill after
-    // mov ecx, {0x********}  # .bss address
-    u8 opcode3[] = {0xb9};
+    // mov ebx, {0x********}  # .bss address
+    u8 opcode3[] = {0xbb};
     write(opcode3);
     write<u32>(0x00000000);  // Fill after
   }
@@ -140,7 +140,7 @@ protected:
     ioh.SizeOfUninitializedData = 65536;
     ioh.AddressOfEntryPoint = 0x1000;
     ioh.BaseOfCode = 0x1000;
-    ioh.BaseOfData = ioh.BaseOfCode + codeSizeWithPadding;
+    ioh.BaseOfData = ioh.BaseOfCode + codeSizeWithPadding + 0x1000;
     ioh.ImageBase = kBaseAddr;
     ioh.SectionAlignment = 0x1000;
     ioh.FileAlignment = 0x0200;
@@ -274,35 +274,34 @@ protected:
   {
     if (op1 > 0) {
       if (op1 > 127) {
-        // add ecx, {op1}
-        u8 opcode[] = {0x81, 0xc1};
+        // add ebx, {op1}
+        u8 opcode[] = {0x81, 0xc3};
         write(opcode);
         write(op1);
       } else if (op1 > 1) {
-        // add ecx, {op1}
-        u8 opcode[] = {0x83, 0xc1};
+        // add ebx, {op1}
+        u8 opcode[] = {0x83, 0xc3};
         write(opcode);
         write(static_cast<u8>(op1));
       } else {
-        // inc ecx
-        u8 opcode[] = {0x41};
+        // inc ebx
+        u8 opcode[] = {0x43};
         write(opcode);
       }
     } else {
-      int rop1 = -op1;
-      if (rop1 > 127) {
-        // sub ecx, {-op1}
-        u8 opcode[] = {0x81, 0xe9};
+      if (op1 < -127) {
+        // sub ebx, {-op1}
+        u8 opcode[] = {0x81, 0xeb};
         write(opcode);
-        write(rop1);
-      } else if (rop1 > 1) {
-        // sub ecx, {-op1}
-        u8 opcode[] = {0x83, 0xe9};
+        write(-op1);
+      } else if (op1 < -1) {
+        // sub ebx, {-op1}
+        u8 opcode[] = {0x83, 0xeb};
         write(opcode);
-        write(static_cast<u8>(rop1));
+        write(static_cast<u8>(-op1));
       } else {
-        // dec ecx
-        u8 opcode[] = {0x49};
+        // dec ebx
+        u8 opcode[] = {0x4b};
         write(opcode);
       }
     }
@@ -313,25 +312,24 @@ protected:
   {
     if (op1 > 0) {
       if (op1 > 1) {
-        // add byte ptr [ecx], {op1}
-        u8 opcode[] = {0x80, 0x01};
+        // add byte ptr [ebx], {op1}
+        u8 opcode[] = {0x80, 0x03};
         write(opcode);
         write(static_cast<u8>(op1));
       } else {
-        // inc byte ptr [ecx]
-        u8 opcode[] = {0xfe, 0x01};
+        // inc byte ptr [ebx]
+        u8 opcode[] = {0xfe, 0x03};
         write(opcode);
       }
     } else {
-      int rop1 = -op1;
-      if (rop1 > 1) {
-        // sub byte ptr [ecx], {op1}
-        u8 opcode[] = {0x80, 0x29};
+      if (op1 < -1) {
+        // sub byte ptr [ebx], {op1}
+        u8 opcode[] = {0x80, 0x2b};
         write(opcode);
-        write(static_cast<u8>(rop1));
+        write(static_cast<u8>(-op1));
       } else {
-        // dec byte ptr [ecx]
-        u8 opcode[] = {0xfe, 0x09};
+        // dec byte ptr [ebx]
+        u8 opcode[] = {0xfe, 0x0b};
         write(opcode);
       }
     }
@@ -340,9 +338,8 @@ protected:
   void
   emitPutcharImpl() CODE_GENERATOR_NOEXCEPT
   {
-    write<u8>(0x51);
-    // push byte ptr [ecx]
-    u8 opcode1[] = {0xff, 0x31};
+    // push byte ptr [ebx]
+    u8 opcode1[] = {0xff, 0x33};
     write(opcode1);
     // call esi (putchar)
     u8 opcode2[] = {0xff, 0xd6};
@@ -350,19 +347,16 @@ protected:
     // pop eax
     u8 opcode3[] = {0x58};
     write(opcode3);
-    write<u8>(0x59);
   }
 
   void
   emitGetcharImpl() CODE_GENERATOR_NOEXCEPT
   {
-    write<u8>(0x51);
     // call edi (getchar)
     u8 opcode1[] = {0xff, 0xd7};
     write(opcode1);
-    write<u8>(0x59);
-    // mov byte ptr [ecx], al
-    u8 opcode2[] = {0x88, 0x01};
+    // mov byte ptr [ebx], al
+    u8 opcode2[] = {0x88, 0x03};
     write(opcode2);
   }
 
@@ -370,8 +364,8 @@ protected:
   emitLoopStartImpl() CODE_GENERATOR_NOEXCEPT
   {
     loopStack.push(oStreamPtr->tellp());
-    // cmp byte ptr [ecx], 0x00
-    u8 opcode1[] = {0x80, 0x39};
+    // cmp byte ptr [ebx], 0x00
+    u8 opcode1[] = {0x80, 0x3b};
     write(opcode1);
     write(static_cast<u8>(0x00));
     // je 0x********
@@ -419,8 +413,8 @@ protected:
   void
   emitAssignImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
-    // mov byte ptr [ecx], {op1}
-    u8 opcode[] = {0xc6, 0x01};
+    // mov byte ptr [ebx], {op1}
+    u8 opcode[] = {0xc6, 0x03};
     write(opcode);
     write(static_cast<u8>(op1));
   }
@@ -428,16 +422,16 @@ protected:
   void
   emitAddVarImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
-    // mov al, byte ptr [ecx]
-    u8 opcode1[] = {0x8a, 0x01};
+    // mov al, byte ptr [ebx]
+    u8 opcode1[] = {0x8a, 0x03};
     write(opcode1);
-    // add byte ptr [ecx + {op1}], al
+    // add byte ptr [ebx + {op1}], al
     if (op1 < -128 || 127 < op1) {
-      u8 opcode2[] = {0x00, 0x81};
+      u8 opcode2[] = {0x00, 0x83};
       write(opcode2);
       write(static_cast<u32>(op1));
     } else {
-      u8 opcode2[] = {0x00, 0x41};
+      u8 opcode2[] = {0x00, 0x43};
       write(opcode2);
       write(static_cast<u8>(op1));
     }
@@ -446,16 +440,16 @@ protected:
   void
   emitSubVarImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
-    // mov al, byte ptr [ecx]
-    u8 opcode1[] = {0x8a, 0x01};
+    // mov al, byte ptr [ebx]
+    u8 opcode1[] = {0x8a, 0x03};
     write(opcode1);
     // sub byte ptr [rbx + {op1}], al
     if (op1 < -128 || 127 < op1) {
-      u8 opcode2[] = {0x28, 0x81};
+      u8 opcode2[] = {0x28, 0x83};
       write(opcode2);
       write(static_cast<u32>(op1));
     } else {
-      u8 opcode2[] = {0x28, 0x41};
+      u8 opcode2[] = {0x28, 0x43};
       write(opcode2);
       write(static_cast<u8>(op1));
     }
@@ -469,16 +463,16 @@ protected:
       u8 opcode1[] = {0xb0};
       write(opcode1);
       write(static_cast<u8>(op2));
-      // mul byte ptr [ecx]
-      u8 opcode2[] = {0xf6, 0x21};
+      // mul byte ptr [ebx]
+      u8 opcode2[] = {0xf6, 0x23};
       write(opcode2);
-      // add byte ptr [ecx + {op1}], al
+      // add byte ptr [ebx + {op1}], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x00, 0x81};
+        u8 opcode2[] = {0x00, 0x83};
         write(opcode2);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x00, 0x41};
+        u8 opcode2[] = {0x00, 0x43};
         write(opcode2);
         write(static_cast<u8>(op1));
       }
@@ -487,16 +481,16 @@ protected:
       u8 opcode1[] = {0xb0};
       write(opcode1);
       write(static_cast<u8>(-op2));
-      // mul byte ptr [ecx]
-      u8 opcode2[] = {0xf6, 0x21};
+      // mul byte ptr [ebx]
+      u8 opcode2[] = {0xf6, 0x23};
       write(opcode2);
-      // sub byte ptr [ecx], al
+      // sub byte ptr [ebx], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x28, 0x81};
+        u8 opcode2[] = {0x28, 0x83};
         write(opcode2);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x28, 0x41};
+        u8 opcode2[] = {0x28, 0x43};
         write(opcode2);
         write(static_cast<u8>(op1));
       }
