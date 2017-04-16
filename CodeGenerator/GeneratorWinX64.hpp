@@ -296,17 +296,16 @@ protected:
         write(opcode);
       }
     } else {
-      int rop1 = -op1;
-      if (rop1 > 127) {
+      if (op1 < -127) {
         // sub rbx, {-op1}
         u8 opcode[] = {0x48, 0x81, 0xeb};
         write(opcode);
-        write(rop1);
-      } else if (rop1 > 1) {
+        write(-op1);
+      } else if (op1 < -1) {
         // sub rbx, {-op1}
         u8 opcode[] = {0x48, 0x83, 0xeb};
         write(opcode);
-        write(static_cast<u8>(rop1));
+        write(static_cast<u8>(-op1));
       } else {
         // dec rbx
         u8 opcode[] = {0x48, 0xff, 0xcb};
@@ -330,12 +329,11 @@ protected:
         write(opcode);
       }
     } else {
-      int rop1 = -op1;
-      if (rop1 > 1) {
+      if (op1 < -1) {
         // sub byte ptr [rbx], {-op1}
         u8 opcode[] = {0x80, 0x2b};
         write(opcode);
-        write(static_cast<u8>(rop1));
+        write(static_cast<u8>(-op1));
       } else {
         // dec byte ptr [rbx]
         u8 opcode[] = {0xfe, 0x0b};
@@ -370,7 +368,7 @@ protected:
     u8 opcode1[] = {0x48, 0x83, 0xec};
     write(opcode1);
     write<u8>(0x20);
-    // call rsi
+    // call rdi
     u8 opcode2[] = {0xff, 0xd7};
     write(opcode2);
     // add rsp, 0x20

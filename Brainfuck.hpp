@@ -140,6 +140,13 @@ public:
      * @brief Ctor for implicit conversion: Actual enum to dummy enum class
      * @param [in] value  Actual enum value
      */
+    Target() :
+      value()
+    {}
+    /*!
+     * @brief Ctor for implicit conversion: Actual enum to dummy enum class
+     * @param [in] value  Actual enum value
+     */
     Target(TargetEnum value) :
       value(value)
     {}
@@ -381,7 +388,10 @@ public:
           {
             int offset = (bfSource[pc] == '>' ? 1 : -1);
             pc++;
-            ircode.emplace_back(BfInst(BfInst::Type::kMovePointer, compressInstruction(pc, '>', '<') + offset));
+            offset += compressInstruction(pc, '>', '<');
+            if (offset != 0) {
+              ircode.emplace_back(BfInst(BfInst::Type::kMovePointer, offset));
+            }
           }
           break;
         case '+':
@@ -389,11 +399,13 @@ public:
           {
             int offset = (bfSource[pc] == '+' ? 1 : -1);
             pc++;
-            int value = compressInstruction(pc, '+', '-') + offset;
-            if (ircode.size() > 0 && ircode[ircode.size() - 1].type == BfInst::Type::kAssign && ircode[ircode.size() - 1].op1 == 0) {
-              ircode[ircode.size() - 1].op1 = value;
-            } else {
-              ircode.emplace_back(BfInst(BfInst::Type::kAdd, value));
+            offset += compressInstruction(pc, '+', '-');
+            if (offset != 0) {
+              if (ircode.size() > 0 && ircode[ircode.size() - 1].type == BfInst::Type::kAssign && ircode[ircode.size() - 1].op1 == 0) {
+                ircode[ircode.size() - 1].op1 = offset;
+              } else {
+                ircode.emplace_back(BfInst(BfInst::Type::kAdd, offset));
+              }
             }
           }
           break;

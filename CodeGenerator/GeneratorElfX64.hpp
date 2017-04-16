@@ -214,13 +214,12 @@ protected:
         write(opcode);
       }
     } else {
-      int rop1 = -op1;
-      if (rop1 > 127) {
+      if (op1 < -127) {
         // sub rsi, {op1}
         u8 opcode[] = {0x48, 0x81, 0xee};
         write(opcode);
         write(-op1);
-      } else if (rop1 > 1) {
+      } else if (op1 < -1) {
         // sub rsi, {op1}
         u8 opcode[] = {0x48, 0x83, 0xee};
         write(opcode);
@@ -248,8 +247,7 @@ protected:
         write(opcode);
       }
     } else {
-      int rop1 = -op1;
-      if (rop1 > 1) {
+      if (op1 < -1) {
         // sub byte ptr [rsi], {op1}
         u8 opcode[] = {0x80, 0x2e};
         write(opcode);

@@ -214,17 +214,16 @@ protected:
         write(opcode);
       }
     } else {
-      int rop1 = -op1;
-      if (rop1 > 127) {
+      if (op1 < -127) {
         // sub ecx, {-op1}
         u8 opcode[] = {0x81, 0xe9};
         write(opcode);
-        write(rop1);
-      } else if (rop1 > 1) {
+        write(-op1);
+      } else if (-op1 < -1) {
         // sub ecx, {-op1}
         u8 opcode[] = {0x83, 0xe9};
         write(opcode);
-        write(static_cast<u8>(rop1));
+        write(static_cast<u8>(-op1));
       } else {
         // dec ecx
         u8 opcode[] = {0x49};
@@ -248,12 +247,11 @@ protected:
         write(opcode);
       }
     } else {
-      int rop1 = -op1;
-      if (rop1 > 1) {
+      if (op1 < -1) {
         // sub byte ptr [ecx], {op1}
         u8 opcode[] = {0x80, 0x29};
         write(opcode);
-        write(static_cast<u8>(rop1));
+        write(static_cast<u8>(-op1));
       } else {
         // dec byte ptr [ecx]
         u8 opcode[] = {0xfe, 0x09};
