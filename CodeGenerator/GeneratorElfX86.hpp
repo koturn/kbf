@@ -219,7 +219,7 @@ protected:
         u8 opcode[] = {0x81, 0xe9};
         write(opcode);
         write(-op1);
-      } else if (-op1 < -1) {
+      } else if (op1 < -1) {
         // sub ecx, {-op1}
         u8 opcode[] = {0x83, 0xe9};
         write(opcode);

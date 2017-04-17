@@ -365,13 +365,13 @@ protected:
       std::cerr << "Invalie address offset: " << op1 << std::endl;
     }
     // ldrb r8, [r1, #{op1}]
-    u32 opcode1 = op1 > 0  ? (0xe5d18000 | (0xff & op1)) : (0xe5518000 | (0xff & -op1));
+    u32 opcode1 = op1 > 0 ? (0xe5d18000 | (0xff & op1)) : (0xe5518000 | (0xff & -op1));
     write(opcode1);
     // add r8, r8, r9
     u32 opcode3 = 0xe0888009;
     write(opcode3);
     // strb r8, [r1]
-    u32 opcode4 = op1 > 0  ? (0xe5c18000 | (0xff & op1)) : (0xe5418003 | (0xff & -op1));
+    u32 opcode4 = op1 > 0 ? (0xe5c18000 | (0xff & op1)) : (0xe5418000 | (0xff & -op1));
     write(opcode4);
   }
 
@@ -382,13 +382,13 @@ protected:
       std::cerr << "Invalie address offset: " << op1 << std::endl;
     }
     // ldrb r8, [r1, #{op1}]
-    u32 opcode1 = op1 > 0  ? (0xe5d18000 | (0xff & op1)) : (0xe5518000 | (0xff & -op1));
+    u32 opcode1 = op1 > 0 ? (0xe5d18000 | (0xff & op1)) : (0xe5518000 | (0xff & -op1));
     write(opcode1);
     // sub r8, r8, r9
     u32 opcode3 = 0xe0488009;
     write(opcode3);
     // strb r8, [r1]
-    u32 opcode4 = op1 > 0  ? (0xe5c18000 | (0xff & op1)) : (0xe5418003 | (0xff & -op1));
+    u32 opcode4 = op1 > 0 ? (0xe5c18000 | (0xff & op1)) : (0xe5418000 | (0xff & -op1));
     write(opcode4);
   }
 
@@ -399,7 +399,7 @@ protected:
       std::cerr << "Invalie address offset: " << op1 << std::endl;
     }
     // ldrb r8, [r1, #{op1}]
-    u32 opcode1 = op1 > 0  ? (0xe5d18000 | (0xff & op1)) : (0xe5518000 | (0xff & -op1));
+    u32 opcode1 = op1 > 0 ? (0xe5d18000 | (0xff & op1)) : (0xe5518000 | (0xff & -op1));
     write(opcode1);
     if (op2 > 0) {
       // mov r6, #{op2}
@@ -423,7 +423,7 @@ protected:
       write(opcode5);
     }
     // strb r8, [r1]
-    u32 opcode6 = op1 > 0  ? (0xe5c18000 | (0xff & op1)) : (0xe5418003 | (0xff & -op1));
+    u32 opcode6 = op1 > 0 ? (0xe5c18000 | (0xff & op1)) : (0xe5418000 | (0xff & -op1));
     write(opcode6);
   }
 

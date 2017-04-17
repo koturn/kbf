@@ -892,10 +892,10 @@ public:
           std::cout << "kGetchar" << std::endl;
           break;
         case BfInst::Type::kLoopStart:
-          std::cout << "kLoopStart" << ircode[pc].op1 << std::endl;
+          std::cout << "kLoopStart: " << ircode[pc].op1 << std::endl;
           break;
         case BfInst::Type::kLoopEnd:
-          std::cout << "kLoopEnd" << ircode[pc].op1 << std::endl;
+          std::cout << "kLoopEnd: " << ircode[pc].op1 << std::endl;
           break;
         case BfInst::Type::kIf:
           std::cout << "kIf: " << ircode[pc].op1 << std::endl;
