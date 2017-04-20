@@ -7,3 +7,4 @@ latex/
 *.pdb
 doxygen_sqlite3.db
 Doxyfile
+version.h

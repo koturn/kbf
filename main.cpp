@@ -7,13 +7,24 @@
 
 #include "ArgumentParser.hpp"
 #include "Brainfuck.hpp"
+#include "version.h"
 
 
-std::string
-removeDirectoryPart(const std::string& filepath);
+#if __cplusplus >= 201103L
+#  define NOEXCEPT  noexcept
+#else
+#  define NOEXCEPT  throw()
+#endif
 
-std::string
-removeSuffix(const std::string& filename);
+
+static void
+showVersion() NOEXCEPT;
+
+static std::string
+removeDirectoryPart(const std::string& filepath) NOEXCEPT;
+
+static std::string
+removeSuffix(const std::string& filename) NOEXCEPT;
 
 
 int
@@ -43,6 +54,7 @@ main(int argc, const char* argv[])
         + "- elfx64: Compile to x64 ELF binary" + ap.getNewlineDescription()
         + "- elfarmeabi: Compile to ARM EABI ELF binary",
         "TARGET", "");
+    ap.add('v', "version", "Show version");
     ap.add('O', "optimize", ArgumentParser::OptionType::kRequiredArgument,
         "Specify optimization level" + ap.getNewlineDescription()
         + "Default value: 1" + ap.getNewlineDescription()
@@ -58,6 +70,10 @@ main(int argc, const char* argv[])
 
     if (ap.get<bool>("help")) {
       ap.showUsage();
+      return EXIT_SUCCESS;
+    }
+    if (ap.get<bool>("version")) {
+      showVersion();
       return EXIT_SUCCESS;
     }
     if (!ap.get<bool>("enable-synchronize-with-stdio")) {
@@ -157,16 +173,29 @@ main(int argc, const char* argv[])
 }
 
 
-std::string
-removeDirectoryPart(const std::string& filepath)
+static void
+showVersion() NOEXCEPT
+{
+  const char* username = std::getenv("USER");
+  std::cout << "<<< CppBrainfuck >>>\n\n";
+  if (username != NULL) {
+    std::cout << "Compiled by: " << username << "\n";
+  }
+  std::cout << "Compiled date: " << __DATE__ << " " << __TIME__ << "\n"
+               "Version: " << kVersion
+            << std::endl;
+}
+
+static std::string
+removeDirectoryPart(const std::string& filepath) NOEXCEPT
 {
   std::string::size_type pos = filepath.find_last_of('/');
   return pos == std::string::npos ? filepath : filepath.substr(pos + 1);
 }
 
 
-std::string
-removeSuffix(const std::string& filename)
+static std::string
+removeSuffix(const std::string& filename) NOEXCEPT
 {
   std::string::size_type pos = filename.find_last_of('.');
   return pos == std::string::npos ? (filename + ".") : filename.substr(0, pos);
