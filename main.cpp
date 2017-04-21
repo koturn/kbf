@@ -9,6 +9,19 @@
 #include "Brainfuck.hpp"
 #include "version.h"
 
+#if __cplusplus >= 201103L
+namespace std {
+  template <class T>
+  struct hash {
+    static_assert(is_enum<T>::value, "This hash only works for enumeration types");
+    size_t operator()(T x) const noexcept {
+      using type = typename underlying_type<T>::type;
+      return hash<type>{}(static_cast<type>(x));
+    }
+  };
+}
+#endif  // __cplusplus >= 201103L
+
 
 #if __cplusplus >= 201103L
 #  define NOEXCEPT  noexcept
@@ -19,6 +32,9 @@
 
 static void
 showVersion() NOEXCEPT;
+
+static std::string
+getDefaultOutputName(const std::string& inputFile, Brainfuck::Target targetType) NOEXCEPT;
 
 static std::string
 removeDirectoryPart(const std::string& filepath) NOEXCEPT;
@@ -42,8 +58,12 @@ main(int argc, const char* argv[])
 
   try {
     ArgumentParser ap(argv[0]);
+    ap.add('e', "eval",  ArgumentParser::OptionType::kRequiredArgument,
+        "Execute specified brainfuck source", "SRC", "");
     ap.add('h', "help", "Show help and exit this program");
     ap.add('m', "minify", "Remove all non-brainfuck characters from source code");
+    ap.add('o', "output",  ArgumentParser::OptionType::kRequiredArgument,
+        "Specify output filename", "FILE", "");
     ap.add('t', "target", ArgumentParser::OptionType::kRequiredArgument,
         "Specify target language" + ap.getNewlineDescription()
         + "- c:      Transpile to C source" + ap.getNewlineDescription()
@@ -83,28 +103,33 @@ main(int argc, const char* argv[])
     std::size_t heapSize = ap.get<std::size_t>("heap-size");
     int optLevel = ap.get<int>("optimize");
 
-    std::vector<std::string> args = ap.getArguments();
-    if (args.size() == 0) {
-      std::cerr << "Please specify one or more brainfuck source code" << std::endl;
-      return EXIT_FAILURE;
-    }
+    const std::vector<std::string>& args = ap.getArguments();
+    const std::string& source = ap.get("eval");
+    std::string inputFile = "a.b";
 
     Brainfuck bf;
-    if (ap.get<bool>("minify")) {
-      for (const auto& filename : args) {
-        bf.load(filename);
-        bf.trim();
-        std::cout << bf.getSource() << std::endl;
-        return EXIT_SUCCESS;
+    if (source != "") {
+      bf.loadSource(source);
+    } else if (args.size() > 0) {
+      if (args[0] == "-") {
+        bf.load(std::cin);
+      } else {
+        bf.load(args[0]);
+        inputFile = args[0];
       }
+    } else {
+      std::cerr << "Please specify one brainfuck source code" << std::endl;
+      return EXIT_FAILURE;
+    }
+    bf.trim();
+
+    if (ap.get<bool>("minify")) {
+      std::cout << bf.getSource() << std::endl;
+      return EXIT_SUCCESS;
     }
     if (ap.get<bool>("dump-ir")) {
-      for (const auto& filename : args) {
-        bf.load(filename);
-        bf.trim();
-        bf.compile();
-        bf.dumpIR();
-      }
+      bf.compile();
+      bf.dumpIR();
       return EXIT_SUCCESS;
     }
     const std::string& target = ap.get("target");
@@ -113,11 +138,12 @@ main(int argc, const char* argv[])
         std::cerr << "Option -t, --target: Invalid value: \"" << target << "\" is specified" << std::endl;
         return EXIT_FAILURE;
       }
-      bf.load(args[0]);
-      bf.trim();
       bf.compile(Brainfuck::CompileType::kJit);
       Brainfuck::Target targetType = targetMap[target];
-      std::string basename = removeSuffix(removeDirectoryPart(args[0]));
+      std::string outputFile = ap.get("output");
+      if (outputFile == "") {
+        outputFile = getDefaultOutputName(inputFile, targetType);
+      }
       switch (targetType) {
         case Brainfuck::Target::kC:
         case Brainfuck::Target::kXbyakC:
@@ -125,22 +151,13 @@ main(int argc, const char* argv[])
           break;
         case Brainfuck::Target::kWinX86:
         case Brainfuck::Target::kWinX64:
-          {
-            std::ofstream ofs(basename + ".exe", std::ios::binary);
-            if (!ofs.is_open()) {
-              std::cerr << "Failed to open: " << "a.out" << std::endl;
-              return EXIT_FAILURE;
-            }
-            bf.emit(ofs, targetType);
-          }
-          break;
         case Brainfuck::Target::kElfX86:
         case Brainfuck::Target::kElfX64:
         case Brainfuck::Target::kElfArmeabi:
           {
-            std::ofstream ofs(basename + ".out", std::ios::binary);
+            std::ofstream ofs(outputFile, std::ios::binary);
             if (!ofs.is_open()) {
-              std::cerr << "Failed to open: " << "a.out" << std::endl;
+              std::cerr << "Failed to open: " << outputFile << std::endl;
               return EXIT_FAILURE;
             }
             bf.emit(ofs, targetType);
@@ -152,20 +169,12 @@ main(int argc, const char* argv[])
       return EXIT_SUCCESS;
     }
 
-    for (const auto& filename : args) {
-      if (filename == "-") {
-        bf.load(std::cin);
-      } else {
-        bf.load(filename);
-      }
-      bf.trim();
-      if (optLevel == 1) {
-        bf.compile(Brainfuck::CompileType::kIR);
-      } else if (optLevel > 1){
-        bf.compile(Brainfuck::CompileType::kJit);
-      }
-      bf.execute(heapSize);
+    if (optLevel == 1) {
+      bf.compile(Brainfuck::CompileType::kIR);
+    } else if (optLevel > 1) {
+      bf.compile(Brainfuck::CompileType::kJit);
     }
+    bf.execute(heapSize);
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
   }
@@ -184,6 +193,21 @@ showVersion() NOEXCEPT
   std::cout << "Compiled date: " << __DATE__ << " " << __TIME__ << "\n"
                "Version: " << kVersion
             << std::endl;
+}
+
+static std::string
+getDefaultOutputName(const std::string& inputFile, Brainfuck::Target targetType) NOEXCEPT
+{
+  std::unordered_map<Brainfuck::Target, std::string> suffixMap{
+    {Brainfuck::Target::kC, ".c"},
+    {Brainfuck::Target::kXbyakC, ".c"},
+    {Brainfuck::Target::kWinX86, ".exe"},
+    {Brainfuck::Target::kWinX64, ".exe"},
+    {Brainfuck::Target::kElfX86, ".out"},
+    {Brainfuck::Target::kElfX64, ".out"},
+    {Brainfuck::Target::kElfArmeabi, ".out"}
+  };
+  return removeSuffix(removeDirectoryPart(inputFile)) + suffixMap[targetType];
 }
 
 static std::string
