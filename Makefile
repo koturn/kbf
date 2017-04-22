@@ -77,6 +77,8 @@ WARNING_CXXFLAGS := \
 
 CC           := gcc $(if $(STDC),$(addprefix -std=,$(STDC)),-std=gnu11)
 CXX          := g++ $(if $(STDCXX),$(addprefix -std=,$(STDCXX)),-std=gnu++14)
+GIT          := git
+ECHO         := echo
 MKDIR        := mkdir -p
 CP           := cp
 RM           := rm -rf
@@ -94,8 +96,14 @@ DOXYFILE     := Doxyfile
 DOXYGENDISTS := doxygen_sqlite3.db html/ latex/
 TARGET       := brainfuck
 SRCS         := $(wildcard *.cpp)
+VERSION_H    := version.h
 OBJS         := $(foreach PAT,%.cpp %.cxx %.cc,$(patsubst $(PAT),%.o,$(filter $(PAT),$(SRCS))))
 DEPENDS      := depends.mk
+GIT_HEAD_PATH := .git/head
+CMD_RESULT := $(shell [ -f $(VERSION_H) ] && : \
+	|| [ -f $(GIT_HEAD_PATH) ] && $(ECHO) "static const char kVersion[] = \"`$(GIT) rev-parse HEAD`\";" > $(VERSION_H) \
+	|| $(ECHO) 'static const char kVersion[] = "";' > $(VERSION_H))
+
 
 ifeq ($(OS),Windows_NT)
     TARGET := $(addsuffix .exe,$(TARGET))
@@ -112,9 +120,14 @@ INSTALLED_TARGET := $(if $(PREFIX),$(PREFIX),/usr/local)/bin/$(TARGET)
 
 .PHONY: all test depends syntax ctags doxygen install uninstall clean disclean
 all: $(TARGET)
-$(TARGET): $(OBJS)
+$(TARGET): $(VERSION_H) $(OBJS)
 
 $(foreach SRC,$(SRCS),$(eval $(filter-out \,$(shell $(CXX) -MM $(SRC)))))
+
+$(VERSION_H): $(GIT_HEAD_PATH)
+	@[ -f $< ] && $(ECHO) "static const char kVersion[] = \"`$(GIT) rev-parse HEAD`\";" > $@
+
+$(GIT_HEAD_PATH):
 
 test: $(TARGET)
 	$(MAKE) -C t/
