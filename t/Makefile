@@ -1,3 +1,9 @@
+ifeq ($(OS),Windows_NT)
+    BIN_SUFFIX := .exe
+else
+    BIN_SUFFIX := .out
+endif
+
 BRAINFUCK := $(addsuffix $(BIN_SUFFIX),../brainfuck)
 TESTS := $(basename $(sort $(wildcard *.b)))
 OPT_LEVELS := 0 1 2

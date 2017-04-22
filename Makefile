@@ -75,35 +75,38 @@ WARNING_CXXFLAGS := \
     -Wuseless-cast \
     -Wzero-as-null-pointer-constant
 
-CC           := gcc $(if $(STDC),$(addprefix -std=,$(STDC)),-std=gnu11)
-CXX          := g++ $(if $(STDCXX),$(addprefix -std=,$(STDCXX)),-std=gnu++14)
-GIT          := git
-ECHO         := echo
-MKDIR        := mkdir -p
-CP           := cp
-RM           := rm -rf
-CTAGS        := ctags
-MACROS       := XBYAK_NO_OP_NAMES
-INCDIRS      := xbyak/
-CPPFLAGS     := $(addprefix -D,$(MACROS)) $(addprefix -I,$(INCDIRS))
-CFLAGS       := -pipe $(WARNING_CFLAGS) $(OPT_CFLAGS)
-CXXFLAGS     := -pipe $(WARNING_CXXFLAGS) $(OPT_CXXFLAGS)
-LDFLAGS      := -pipe $(OPT_LDFLAGS)
-LDLIBS       := $(OPT_LDLIBS)
-CTAGSFLAGS   := -R --languages=c,c++
-DOXYGEN      := doxygen
-DOXYFILE     := Doxyfile
-DOXYGENDISTS := doxygen_sqlite3.db html/ latex/
-TARGET       := brainfuck
-SRCS         := $(wildcard *.cpp)
-VERSION_H    := version.h
-OBJS         := $(foreach PAT,%.cpp %.cxx %.cc,$(patsubst $(PAT),%.o,$(filter $(PAT),$(SRCS))))
-DEPENDS      := depends.mk
-GIT_HEAD_PATH := .git/head
-CMD_RESULT := $(shell [ -f $(VERSION_H) ] && : \
-	|| [ -f $(GIT_HEAD_PATH) ] && $(ECHO) "static const char kVersion[] = \"`$(GIT) rev-parse HEAD`\";" > $(VERSION_H) \
-	|| $(ECHO) 'static const char kVersion[] = "";' > $(VERSION_H))
-
+CC            := gcc $(if $(STDC),$(addprefix -std=,$(STDC)),-std=gnu11)
+CXX           := g++ $(if $(STDCXX),$(addprefix -std=,$(STDCXX)),-std=gnu++11)
+GIT           := git
+ECHO          := echo
+MKDIR         := mkdir -p
+CP            := cp
+RM            := rm -rf
+CTAGS         := ctags
+MACROS        := XBYAK_NO_OP_NAMES
+INCDIRS       := xbyak/
+CPPFLAGS      := $(addprefix -D,$(MACROS)) $(addprefix -I,$(INCDIRS))
+CFLAGS        := -pipe $(WARNING_CFLAGS) $(OPT_CFLAGS)
+CXXFLAGS      := -pipe $(WARNING_CXXFLAGS) $(OPT_CXXFLAGS)
+LDFLAGS       := -pipe $(OPT_LDFLAGS)
+LDLIBS        := $(OPT_LDLIBS)
+CTAGSFLAGS    := -R --languages=c,c++
+DOXYGEN       := doxygen
+DOXYFILE      := Doxyfile
+DOXYGENDISTS  := doxygen_sqlite3.db html/ latex/
+TARGET        := brainfuck
+SRCS          := $(wildcard *.cpp)
+VERSION_H     := version.h
+OBJS          := $(foreach PAT,%.cpp %.cxx %.cc,$(patsubst $(PAT),%.o,$(filter $(PAT),$(SRCS))))
+DEPENDS       := depends.mk
+GIT_HEAD_PATH := .git/HEAD
+USERNAME      := $(shell $(ECHO) $$USER)
+COMMIT_HASH   := $(shell $(GIT) rev-parse HEAD)
+CMD_RESULT    := $(shell [ -f $(VERSION_H) ] && : \
+    || ($(ECHO) "static const char kUsername[] = \"$(USERNAME)\";" > $(VERSION_H) \
+        && [ -f $(GIT_HEAD_PATH) ] \
+        && $(ECHO) "static const char kVersion[] = \"$(COMMIT_HASH)\";" >> $(VERSION_H) \
+        || $(ECHO) 'static const char kVersion[] = "";') >> $(VERSION_H))
 
 ifeq ($(OS),Windows_NT)
     TARGET := $(addsuffix .exe,$(TARGET))
@@ -125,7 +128,9 @@ $(TARGET): $(VERSION_H) $(OBJS)
 $(foreach SRC,$(SRCS),$(eval $(filter-out \,$(shell $(CXX) -MM $(SRC)))))
 
 $(VERSION_H): $(GIT_HEAD_PATH)
-	@[ -f $< ] && $(ECHO) "static const char kVersion[] = \"`$(GIT) rev-parse HEAD`\";" > $@
+	$(ECHO) "static const char kUsername[] = \"$(USERNAME)\";" > $@ \
+		&& [ -f $< ] && $(ECHO) "static const char kVersion[] = \"$(COMMIT_HASH)\";" >> $@ \
+		|| $(ECHO) 'static const char kVersion[] = "";' >> $@
 
 $(GIT_HEAD_PATH):
 
@@ -159,4 +164,4 @@ clean:
 	$(RM) $(OBJS) $(DOXYGENDISTS)
 
 distclean:
-	$(RM) $(TARGET) $(OBJS) $(DOXYFILE) $(DOXYGENDISTS)
+	$(RM) $(TARGET) $(VERSION_H) $(OBJS) $(DOXYFILE) $(DOXYGENDISTS)

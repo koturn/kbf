@@ -185,12 +185,9 @@ main(int argc, const char* argv[])
 static void
 showVersion() NOEXCEPT
 {
-  const char* username = std::getenv("USER");
-  std::cout << "<<< CppBrainfuck >>>\n\n";
-  if (username != NULL) {
-    std::cout << "Compiled by: " << username << "\n";
-  }
-  std::cout << "Compiled date: " << __DATE__ << " " << __TIME__ << "\n"
+  std::cout << "<<< CppBrainfuck >>>\n\n"
+               "Compiled by: " << kUsername << "\n"
+               "Compiled date: " << __DATE__ << " " << __TIME__ << "\n"
                "Version: " << kVersion
             << std::endl;
 }
