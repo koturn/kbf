@@ -230,11 +230,11 @@ protected:
     IMAGE_IMPORT_DESCRIPTOR iids[2];
     IMAGE_THUNK_DATA32 itdInts[4];
 
-    iids[0].OriginalFirstThunk = static_cast<u32>(ishIdata.VirtualAddress + sizeof(iids));  // int
+    iids[0].OriginalFirstThunk = static_cast<DWORD>(ishIdata.VirtualAddress + sizeof(iids));  // int
     iids[0].TimeDateStamp = 0x00000000;
     iids[0].ForwarderChain = 0x00000000;
-    iids[0].Name = static_cast<u32>(iids[0].OriginalFirstThunk + sizeof(itdInts));  // msvcrt.dll
-    iids[0].FirstThunk = static_cast<u32>(iids[0].Name + 16);  // iat
+    iids[0].Name = static_cast<DWORD>(iids[0].OriginalFirstThunk + sizeof(itdInts));  // msvcrt.dll
+    iids[0].FirstThunk = iids[0].Name + 16;  // iat
     iids[1].Characteristics = 0x00000000;
     iids[1].TimeDateStamp = 0x00000000;
     iids[1].ForwarderChain = 0x00000000;
@@ -242,9 +242,9 @@ protected:
     iids[1].FirstThunk = 0x00000000;
     write(iids);
 
-    itdInts[0].u1.AddressOfData = ishIdata.VirtualAddress + sizeof(iids) + sizeof(kDllName) + sizeof(itdInts) * 2;  // putchar
-    itdInts[1].u1.AddressOfData = itdInts[0].u1.AddressOfData + sizeof(WORD) + sizeof(kPutcharName);  // getchar
-    itdInts[2].u1.AddressOfData = itdInts[1].u1.AddressOfData + sizeof(WORD) + sizeof(kGetcharName);  // exit
+    itdInts[0].u1.AddressOfData = ishIdata.VirtualAddress + static_cast<DWORD>(sizeof(iids) + sizeof(kDllName) + sizeof(itdInts) * 2);  // putchar
+    itdInts[1].u1.AddressOfData = itdInts[0].u1.AddressOfData + static_cast<DWORD>(sizeof(WORD) + sizeof(kPutcharName));  // getchar
+    itdInts[2].u1.AddressOfData = itdInts[1].u1.AddressOfData + static_cast<DWORD>(sizeof(WORD) + sizeof(kGetcharName));  // exit
     itdInts[3].u1.AddressOfData = 0x00000000;
     write(itdInts);  // write INT (import Name Table)
     write(kDllName);
@@ -258,13 +258,13 @@ protected:
     write(kExitName);
 
     oStreamPtr->seekp(ishText.PointerToRawData + 0x02, std::ios_base::beg);
-    write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk));  // Fill putchar() address
+    write(ioh.ImageBase + iids[0].FirstThunk);  // Fill putchar() address
     oStreamPtr->seekp(ishText.PointerToRawData + 0x08, std::ios_base::beg);
     write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk + sizeof(DWORD)));  // Fill getchar() address
     oStreamPtr->seekp(exitAddrPos, std::ios_base::beg);
     write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk + sizeof(DWORD) * 2));  // Fill exit() address
     oStreamPtr->seekp(ishText.PointerToRawData + 0x0d, std::ios_base::beg);
-    write(static_cast<u32>(ioh.ImageBase + ishBss.VirtualAddress));  // Fill .bss address
+    write(ioh.ImageBase + ishBss.VirtualAddress);  // Fill .bss address
 
     oStreamPtr->seekp(0, std::ios_base::end);
   }
@@ -468,12 +468,12 @@ protected:
       write(opcode2);
       // add byte ptr [ebx + {op1}], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x00, 0x83};
-        write(opcode2);
+        u8 opcode3[] = {0x00, 0x83};
+        write(opcode3);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x00, 0x43};
-        write(opcode2);
+        u8 opcode3[] = {0x00, 0x43};
+        write(opcode3);
         write(static_cast<u8>(op1));
       }
     } else {
@@ -486,12 +486,12 @@ protected:
       write(opcode2);
       // sub byte ptr [ebx], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x28, 0x83};
-        write(opcode2);
+        u8 opcode3[] = {0x28, 0x83};
+        write(opcode3);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x28, 0x43};
-        write(opcode2);
+        u8 opcode3[] = {0x28, 0x43};
+        write(opcode3);
         write(static_cast<u8>(op1));
       }
     }

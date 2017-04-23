@@ -327,12 +327,12 @@ public:
 
   /*!
    * @brief Load brainfuck source from a std::string
-   * @param [in] bfSource  Brainfuck source code
+   * @param [in] bfSource_  Brainfuck source code
    */
   void
-  loadSource(const std::string& bfSource) BRAINFUCK_NOEXCEPT
+  loadSource(const std::string& bfSource_) BRAINFUCK_NOEXCEPT
   {
-    this->bfSource = bfSource;
+    bfSource = bfSource_;
     state = CompileType::kUnknown;
   }
 

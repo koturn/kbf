@@ -399,12 +399,12 @@ protected:
       write(opcode2);
       // add byte ptr [ecx + {op1}], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x00, 0x81};
-        write(opcode2);
+        u8 opcode3[] = {0x00, 0x81};
+        write(opcode3);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x00, 0x41};
-        write(opcode2);
+        u8 opcode3[] = {0x00, 0x41};
+        write(opcode3);
         write(static_cast<u8>(op1));
       }
     } else {
@@ -417,12 +417,12 @@ protected:
       write(opcode2);
       // sub byte ptr [ecx], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x28, 0x81};
-        write(opcode2);
+        u8 opcode3[] = {0x28, 0x81};
+        write(opcode3);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x28, 0x41};
-        write(opcode2);
+        u8 opcode3[] = {0x28, 0x41};
+        write(opcode3);
         write(static_cast<u8>(op1));
       }
     }
@@ -445,8 +445,8 @@ const Elf32_Addr GeneratorElfX86::kBaseAddr = 0x04048000;
 const Elf32_Addr GeneratorElfX86::kBssAddr = 0x04248000;
 const Elf32_Half GeneratorElfX86::kNProgramHeaders = 2;
 const Elf32_Half GeneratorElfX86::kNSectionHeaders = 4;
-const Elf32_Off GeneratorElfX86::kHeaderSize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders;
-const Elf32_Off GeneratorElfX86::kFooterSize = sizeof(Elf32_Shdr) * kNSectionHeaders;
+const Elf32_Off GeneratorElfX86::kHeaderSize = static_cast<Elf32_Off>(sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)) * kNProgramHeaders;
+const Elf32_Off GeneratorElfX86::kFooterSize = static_cast<Elf32_Off>(sizeof(Elf32_Shdr)) * kNSectionHeaders;
 
 
 #endif  // GENERATOR_ELF_X86_HPP

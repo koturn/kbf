@@ -35,6 +35,20 @@ public:
     oStreamPtr(&oStream)
   {}
 
+  virtual ~CodeGenerator()
+  {}
+
+  CodeGenerator(const CodeGenerator& that) CODE_GENERATOR_NOEXCEPT :
+    oStreamPtr(that.oStreamPtr)
+  {}
+
+  CodeGenerator&
+  operator=(const CodeGenerator& that) CODE_GENERATOR_NOEXCEPT
+  {
+    oStreamPtr = that.oStreamPtr;
+    return *this;
+  }
+
   void
   setOutputStream(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT
   {

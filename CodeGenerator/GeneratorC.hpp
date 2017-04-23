@@ -46,7 +46,7 @@ protected:
                      "int\n"
                      "main(void)\n"
                      "{\n"
-                  << indent << "static unsigned char memory[MEMORY_SIZE] = {0};\n"
+                  << indent << "unsigned char memory[MEMORY_SIZE] = {0};\n"
                   << indent << "unsigned char *p = memory;\n\n";
     indentLevel++;
   }
@@ -54,7 +54,7 @@ protected:
   void
   emitFooterImpl() CODE_GENERATOR_NOEXCEPT
   {
-    (*oStreamPtr) << "putchar('\\n');\n\n"
+    (*oStreamPtr) << indent << "putchar('\\n');\n\n"
                   << indent << "return EXIT_SUCCESS;\n"
                      "}\n\n\n"
                      "#ifndef __GNUC__\n"
@@ -62,7 +62,8 @@ protected:
                      "memrchr(const void *s, int c, size_t n)\n"
                      "{\n"
                   << indent << "const char *_s = (const char *) s;\n"
-                  << indent << "for (; *((int *) _s) != c; _s--);\n"
+                  << indent << "char _c = (char) c;\n"
+                  << indent << "for (; *_s != _c; _s--);\n"
                   << indent << "return (void *) _s;\n"
                      "}\n"
                      "#endif"

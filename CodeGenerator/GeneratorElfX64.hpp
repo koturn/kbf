@@ -398,12 +398,12 @@ protected:
       write(opcode2);
       // add byte ptr [rsi + {op1}], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x00, 0x86};
-        write(opcode2);
+        u8 opcode3[] = {0x00, 0x86};
+        write(opcode3);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x00, 0x46};
-        write(opcode2);
+        u8 opcode3[] = {0x00, 0x46};
+        write(opcode3);
         write(static_cast<u8>(op1));
       }
     } else {
@@ -416,12 +416,12 @@ protected:
       write(opcode2);
       // sub byte ptr [rsi], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x28, 0x86};
-        write(opcode2);
+        u8 opcode3[] = {0x28, 0x86};
+        write(opcode3);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x28, 0x46};
-        write(opcode2);
+        u8 opcode3[] = {0x28, 0x46};
+        write(opcode3);
         write(static_cast<u8>(op1));
       }
     }

@@ -1,3 +1,5 @@
+XBYAK_DIR := xbyak/
+
 ifeq ($(DEBUG),true)
     OPT_CFLAGS   := -O0 -g3 -ftrapv -fstack-protector-all -D_FORTIFY_SOURCE=2
     OPT_LDLIBS   := -lssp
@@ -123,7 +125,7 @@ INSTALLED_TARGET := $(if $(PREFIX),$(PREFIX),/usr/local)/bin/$(TARGET)
 
 .PHONY: all test depends syntax ctags doxygen install uninstall clean disclean
 all: $(TARGET)
-$(TARGET): $(VERSION_H) $(OBJS)
+$(TARGET): $(XBYAK_DIR) $(VERSION_H) $(OBJS)
 
 $(foreach SRC,$(SRCS),$(eval $(filter-out \,$(shell $(CXX) -MM $(SRC)))))
 
@@ -133,6 +135,9 @@ $(VERSION_H): $(GIT_HEAD_PATH)
 		|| $(ECHO) 'static const char kVersion[] = "";' >> $@
 
 $(GIT_HEAD_PATH):
+
+$(XBYAK_DIR):
+	$(GIT) submodule init && $(GIT) submodule update
 
 test: $(TARGET)
 	$(MAKE) -C t/

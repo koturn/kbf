@@ -147,7 +147,14 @@ main(int argc, const char* argv[])
       switch (targetType) {
         case Brainfuck::Target::kC:
         case Brainfuck::Target::kXbyakC:
-          bf.emit(std::cout, targetType);
+          {
+            std::ofstream ofs(outputFile);
+            if (!ofs.is_open()) {
+              std::cerr << "Failed to open: " << outputFile << std::endl;
+              return EXIT_FAILURE;
+            }
+            bf.emit(ofs, targetType);
+          }
           break;
         case Brainfuck::Target::kWinX86:
         case Brainfuck::Target::kWinX64:

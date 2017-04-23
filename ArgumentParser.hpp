@@ -481,24 +481,24 @@ public:
 
   /*!
    * @brief Set program name
-   * @param [in] progName  A name of this program
+   * @param [in] progName_  A name of this program
    */
   void
-  setProgramName(const std::string& progName) ARGUMENT_PARSER_NOEXCEPT
+  setProgramName(const std::string& progName_) ARGUMENT_PARSER_NOEXCEPT
   {
-    this->progName = progName;
+    progName = progName_;
   }
 
   /*!
    * @brief Set description of this program
    *
    * This descriptoon is used in showUsage().
-   * @param [in] description  A description of this program
+   * @param [in] description_  A description of this program
    */
   void
-  setDescription(const std::string& description) ARGUMENT_PARSER_NOEXCEPT
+  setDescription(const std::string& description_) ARGUMENT_PARSER_NOEXCEPT
   {
-    this->description = description;
+    description = description_;
   }
 
   /*!
@@ -506,12 +506,12 @@ public:
    *
    * This string is used in showUsage()
    *
-   * @param [in] indentStr  indent string
+   * @param [in] indentStr_  indent string
    */
   void
-  setIndent(const std::string& indentStr) ARGUMENT_PARSER_NOEXCEPT
+  setIndent(const std::string& indentStr_) ARGUMENT_PARSER_NOEXCEPT
   {
-    this->indentStr = indentStr;
+    indentStr = indentStr_;
   }
 
   /*!
@@ -529,7 +529,7 @@ public:
    * @param [in] shortOptName  Short option name
    * @param [in] longOptName   Long option name
    * @param [in] optType       Option type
-   * @param [in] description   Description for this option
+   * @param [in] description_  Description for this option
    * @param [in] metavar       Name of meta variable
    * @param [in] defaultValue  Default value of this option
    */
@@ -538,7 +538,7 @@ public:
       int shortOptName,
       const std::string& longOptName,
       OptionType optType,
-      const std::string& description="",
+      const std::string& description_="",
       const std::string& metavar=DEFAULT_METAVAR,
       const std::string& defaultValue="")
   {
@@ -546,9 +546,9 @@ public:
     shortOptMap[shortOptName] = options.size();
     longOptMap[longOptName] = options.size();
 #if __cplusplus >= 201103L
-    options.emplace_back(OptionItem(shortOptName, longOptName, optType, description, metavar, dv));
+    options.emplace_back(OptionItem(shortOptName, longOptName, optType, description_, metavar, dv));
 #else
-    options.push_back(OptionItem(shortOptName, longOptName, optType, description, metavar, dv));
+    options.push_back(OptionItem(shortOptName, longOptName, optType, description_, metavar, dv));
 #endif  // __cplusplus >= 201103L
   }
 
@@ -556,7 +556,7 @@ public:
    * @brief Add a short name only option to this parser
    * @param [in] shortOptName  Short option name
    * @param [in] optType       Option type
-   * @param [in] description   Description for this option
+   * @param [in] description_  Description for this option
    * @param [in] metavar       Name of meta variable
    * @param [in] defaultValue  Default value of this option
    */
@@ -564,16 +564,16 @@ public:
   add(
       int shortOptName,
       OptionType optType,
-      const std::string& description="",
+      const std::string& description_="",
       const std::string& metavar=DEFAULT_METAVAR,
       const std::string& defaultValue="")
   {
     const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? STRING_FALSE : defaultValue);
     shortOptMap[shortOptName] = options.size();
 #if __cplusplus >= 201103L
-    options.emplace_back(OptionItem(shortOptName, "", optType, description, metavar, dv));
+    options.emplace_back(OptionItem(shortOptName, "", optType, description_, metavar, dv));
 #else
-    options.push_back(OptionItem(shortOptName, "", optType, description, metavar, dv));
+    options.push_back(OptionItem(shortOptName, "", optType, description_, metavar, dv));
 #endif  // __cplusplus >= 201103L
   }
 
@@ -581,7 +581,7 @@ public:
    * @brief Add a long name only option to this parser
    * @param [in] longOptName   Long option name
    * @param [in] optType       Option type
-   * @param [in] description   Description for this option
+   * @param [in] description_  Description for this option
    * @param [in] metavar       Name of meta variable
    * @param [in] defaultValue  Default value of this option
    */
@@ -589,16 +589,16 @@ public:
   add(
       const std::string& longOptName,
       OptionType optType,
-      const std::string& description="",
+      const std::string& description_="",
       const std::string& metavar=DEFAULT_METAVAR,
       const std::string& defaultValue="")
   {
     const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? STRING_FALSE : defaultValue);
     longOptMap[longOptName] = options.size();
 #if __cplusplus >= 201103L
-    options.emplace_back(OptionItem(-1, longOptName, optType, description, metavar, dv));
+    options.emplace_back(OptionItem(-1, longOptName, optType, description_, metavar, dv));
 #else
-    options.push_back(OptionItem(-1, longOptName, optType, description, metavar, dv));
+    options.push_back(OptionItem(-1, longOptName, optType, description_, metavar, dv));
 #endif  // __cplusplus >= 201103L
   }
 
@@ -608,7 +608,7 @@ public:
    * @param [in] shortOptName  Short option name
    * @param [in] longOptName   Long option name
    * @param [in] optType       Option type
-   * @param [in] description   Description for this option
+   * @param [in] description_  Description for this option
    * @param [in] metavar       Name of meta variable
    * @param [in] defaultValue  Default value of this option
    */
@@ -618,11 +618,11 @@ public:
       int shortOptName,
       const std::string& longOptName,
       OptionType optType,
-      const std::string& description,
+      const std::string& description_,
       const std::string& metavar,
       const T& defaultValue)
   {
-    add(shortOptName, longOptName, optType, description, metavar, toString(defaultValue));
+    add(shortOptName, longOptName, optType, description_, metavar, toString(defaultValue));
   }
 
   /*!
@@ -630,7 +630,7 @@ public:
    * @tparam T Type of default value (this type parameter is infered from defaultValue)
    * @param [in] shortOptName  Short option name
    * @param [in] optType       Option type
-   * @param [in] description   Description for this option
+   * @param [in] description_   Description for this option
    * @param [in] metavar       Name of meta variable
    * @param [in] defaultValue  Default value of this option
    */
@@ -639,11 +639,11 @@ public:
   add(
       int shortOptName,
       OptionType optType,
-      const std::string& description,
+      const std::string& description_,
       const std::string& metavar,
       const T& defaultValue)
   {
-    add(shortOptName, optType, description, metavar, toString(defaultValue));
+    add(shortOptName, optType, description_, metavar, toString(defaultValue));
   }
 
   /*!
@@ -651,7 +651,7 @@ public:
    * @tparam T Type of default value (this type parameter is infered from defaultValue)
    * @param [in] longOptName   Long option name
    * @param [in] optType       Option type
-   * @param [in] description   Description for this option
+   * @param [in] description_  Description for this option
    * @param [in] metavar       Name of meta variable
    * @param [in] defaultValue  Default value of this option
    */
@@ -660,52 +660,52 @@ public:
   add(
       const std::string& longOptName,
       OptionType optType,
-      const std::string& description,
+      const std::string& description_,
       const std::string& metavar,
       const T& defaultValue)
   {
-    add(longOptName, optType, description, metavar, toString(defaultValue));
+    add(longOptName, optType, description_, metavar, toString(defaultValue));
   }
 
   /*!
    * @brief Add a boolean option to this parser with a default value in any type
    * @param [in] shortOptName  Short option name
    * @param [in] longOptName   Long option name
-   * @param [in] description   Description for this option
+   * @param [in] description_  Description for this option
    */
   void
   add(
       int shortOptName,
       const std::string& longOptName,
-      const std::string& description)
+      const std::string& description_)
   {
-    add(shortOptName, longOptName, OptionType::kNoArgument, description, "", STRING_FALSE);
+    add(shortOptName, longOptName, OptionType::kNoArgument, description_, "", STRING_FALSE);
   }
 
   /*!
    * @brief Add a short name only boolean option to this parser with a default value in any type
    * @param [in] shortOptName  Short option name
-   * @param [in] description   Description for this option
+   * @param [in] description_  Description for this option
    */
   void
   add(
       int shortOptName,
-      const std::string& description)
+      const std::string& description_)
   {
-    add(shortOptName, OptionType::kNoArgument, description, "", STRING_FALSE);
+    add(shortOptName, OptionType::kNoArgument, description_, "", STRING_FALSE);
   }
 
   /*!
    * @brief Add a long name only boolean option to this parser with a default value in any type
    * @param [in] longOptName   Long option name
-   * @param [in] description   Description for this option
+   * @param [in] description_  Description for this option
    */
   void
   add(
       const std::string& longOptName,
-      const std::string& description)
+      const std::string& description_)
   {
-    add(longOptName, OptionType::kNoArgument, description, "", STRING_FALSE);
+    add(longOptName, OptionType::kNoArgument, description_, "", STRING_FALSE);
   }
 
   /*!

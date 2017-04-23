@@ -312,7 +312,7 @@ protected:
   {
     std::ostream::pos_type pos = loopStack.top();
     std::ostream::pos_type curPos = oStreamPtr->tellp();
-    int offset = (curPos - pos) / 4;
+    int offset = static_cast<int>(curPos - pos) / 4;
     // b #*
     u32 opcode1 = (0xea000000 | (0x00ffffff & -(offset + 2)));
     // beq #*
@@ -338,7 +338,7 @@ protected:
   {
     std::ostream::pos_type pos = loopStack.top();
     std::ostream::pos_type curPos = oStreamPtr->tellp();
-    int offset = (curPos - pos) / 4;
+    int offset = static_cast<int>(curPos - pos) / 4;
     // beq #*
     u32 opcode1 = (0x0a000000 | (0x00ffffff & (offset - 2)));
     oStreamPtr->seekp(pos + static_cast<std::ostream::pos_type>(8), std::ios_base::beg);
@@ -446,8 +446,8 @@ const Elf32_Addr GeneratorElfArmeabi::kBaseAddr = 0x00010000;
 const Elf32_Addr GeneratorElfArmeabi::kBssAddr = 0x00210000;
 const Elf32_Half GeneratorElfArmeabi::kNProgramHeaders = 2;
 const Elf32_Half GeneratorElfArmeabi::kNSectionHeaders = 4;
-const Elf32_Off GeneratorElfArmeabi::kHeaderSize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders;
-const Elf32_Off GeneratorElfArmeabi::kFooterSize = sizeof(Elf32_Shdr) * kNSectionHeaders;
+const Elf32_Off GeneratorElfArmeabi::kHeaderSize = static_cast<Elf32_Off>(sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)) * kNProgramHeaders;
+const Elf32_Off GeneratorElfArmeabi::kFooterSize = static_cast<Elf32_Off>(sizeof(Elf32_Shdr)) * kNSectionHeaders;
 
 
 #endif  // GENERATOR_ELF_ARMEABI_HPP

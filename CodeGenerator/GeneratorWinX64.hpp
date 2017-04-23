@@ -237,11 +237,11 @@ protected:
     IMAGE_IMPORT_DESCRIPTOR iids[2];
     IMAGE_THUNK_DATA64 itdInts[4];
 
-    iids[0].OriginalFirstThunk = static_cast<u32>(ishIdata.VirtualAddress + sizeof(iids));  // int
+    iids[0].OriginalFirstThunk = static_cast<DWORD>(ishIdata.VirtualAddress + sizeof(iids));  // int
     iids[0].TimeDateStamp = 0x00000000;
     iids[0].ForwarderChain = 0x00000000;
-    iids[0].Name = static_cast<u32>(iids[0].OriginalFirstThunk + sizeof(itdInts));  // msvcrt.dll
-    iids[0].FirstThunk = static_cast<u32>(iids[0].Name + 16);  // iat
+    iids[0].Name = static_cast<DWORD>(iids[0].OriginalFirstThunk + sizeof(itdInts));  // msvcrt.dll
+    iids[0].FirstThunk = iids[0].Name + 16;  // iat
     iids[1].Characteristics = 0x00000000;
     iids[1].TimeDateStamp = 0x00000000;
     iids[1].ForwarderChain = 0x00000000;
@@ -487,12 +487,12 @@ protected:
       write(opcode2);
       // add byte ptr [rbx + {op1}], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x00, 0x83};
-        write(opcode2);
+        u8 opcode3[] = {0x00, 0x83};
+        write(opcode3);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x00, 0x43};
-        write(opcode2);
+        u8 opcode3[] = {0x00, 0x43};
+        write(opcode3);
         write(static_cast<u8>(op1));
       }
     } else {
@@ -505,12 +505,12 @@ protected:
       write(opcode2);
       // sub byte ptr [rbx], al
       if (op1 < -128 || 127 < op1) {
-        u8 opcode2[] = {0x28, 0x83};
-        write(opcode2);
+        u8 opcode3[] = {0x28, 0x83};
+        write(opcode3);
         write(static_cast<u32>(op1));
       } else {
-        u8 opcode2[] = {0x28, 0x43};
-        write(opcode2);
+        u8 opcode3[] = {0x28, 0x43};
+        write(opcode3);
         write(static_cast<u8>(op1));
       }
     }
