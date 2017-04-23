@@ -30,12 +30,18 @@ $1:
 endef
 
 
-.PHONY: all interpreter clean $(TESTS)
+.PHONY: all help warning interpreter clean $(TESTS)
 
-all: $(BRAINFUCK) interpreter
+all: $(BRAINFUCK) help version interpreter
 
 $(BRAINFUCK):
 	$(MAKE) -C ../
+
+help:
+	$(BRAINFUCK) --help
+
+version:
+	$(BRAINFUCK) --version
 
 interpreter: $(foreach OPT_LEVEL,$(OPT_LEVELS), interpreter$(OPT_LEVEL))
 
