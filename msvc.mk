@@ -25,6 +25,7 @@ MSVC_MACROS = /DNDEBUG /D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_WARNINGS /D_S
 CPP      = cl
 GIT      = git
 ECHO     = echo
+CD       = cd
 MKDIR    = mkdir
 RM       = del /F
 CTAGS    = ctags
@@ -87,7 +88,7 @@ $(XBYAK_DIR):
 	$(GIT) submodule update --init
 
 test:
-	$(TARGET) -h
+	$(CD) t && $(MAKE) /f $(MAKEFILE) & cd ..
 
 ctags:
 	$(CTAGS) $(CTAGSFLAGS)
