@@ -137,7 +137,7 @@ $(VERSION_H): $(GIT_HEAD_PATH)
 $(GIT_HEAD_PATH):
 
 $(XBYAK_DIR):
-	$(GIT) submodule init && $(GIT) submodule update
+	$(GIT) submodule update --init
 
 test: $(TARGET)
 	$(MAKE) -C t/

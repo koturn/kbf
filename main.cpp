@@ -9,19 +9,6 @@
 #include "Brainfuck.hpp"
 #include "version.h"
 
-#if __cplusplus >= 201103L
-namespace std {
-  template <class T>
-  struct hash {
-    static_assert(is_enum<T>::value, "This hash only works for enumeration types");
-    size_t operator()(T x) const noexcept {
-      using type = typename underlying_type<T>::type;
-      return hash<type>{}(static_cast<type>(x));
-    }
-  };
-}
-#endif  // __cplusplus >= 201103L
-
 
 #if __cplusplus >= 201103L
 #  define NOEXCEPT  noexcept
@@ -35,6 +22,9 @@ showVersion() NOEXCEPT;
 
 static std::string
 getDefaultOutputName(const std::string& inputFile, Brainfuck::Target targetType) NOEXCEPT;
+
+static std::string
+getSuffix(Brainfuck::Target targetType) NOEXCEPT;
 
 static std::string
 removeDirectoryPart(const std::string& filepath) NOEXCEPT;
@@ -202,16 +192,29 @@ showVersion() NOEXCEPT
 static std::string
 getDefaultOutputName(const std::string& inputFile, Brainfuck::Target targetType) NOEXCEPT
 {
-  std::unordered_map<Brainfuck::Target, std::string> suffixMap{
-    {Brainfuck::Target::kC, ".c"},
-    {Brainfuck::Target::kXbyakC, ".c"},
-    {Brainfuck::Target::kWinX86, ".exe"},
-    {Brainfuck::Target::kWinX64, ".exe"},
-    {Brainfuck::Target::kElfX86, ".out"},
-    {Brainfuck::Target::kElfX64, ".out"},
-    {Brainfuck::Target::kElfArmeabi, ".out"}
-  };
-  return removeSuffix(removeDirectoryPart(inputFile)) + suffixMap[targetType];
+  return removeSuffix(removeDirectoryPart(inputFile)) + getSuffix(targetType);
+}
+
+static std::string
+getSuffix(Brainfuck::Target targetType) NOEXCEPT
+{
+  switch (targetType) {
+    case Brainfuck::Target::kC:
+    case Brainfuck::Target::kXbyakC:
+      return ".c";
+      break;
+    case Brainfuck::Target::kWinX86:
+    case Brainfuck::Target::kWinX64:
+      return ".exe";
+    case Brainfuck::Target::kElfX86:
+    case Brainfuck::Target::kElfX64:
+    case Brainfuck::Target::kElfArmeabi:
+      return ".out";
+      break;
+    default:
+      assert(false);
+      return "";
+  }
 }
 
 static std::string
