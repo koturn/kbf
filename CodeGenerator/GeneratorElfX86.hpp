@@ -445,8 +445,8 @@ const Elf32_Addr GeneratorElfX86::kBaseAddr = 0x04048000;
 const Elf32_Addr GeneratorElfX86::kBssAddr = 0x04248000;
 const Elf32_Half GeneratorElfX86::kNProgramHeaders = 2;
 const Elf32_Half GeneratorElfX86::kNSectionHeaders = 4;
-const Elf32_Off GeneratorElfX86::kHeaderSize = static_cast<Elf32_Off>(sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)) * kNProgramHeaders;
-const Elf32_Off GeneratorElfX86::kFooterSize = static_cast<Elf32_Off>(sizeof(Elf32_Shdr)) * kNSectionHeaders;
+const Elf32_Off GeneratorElfX86::kHeaderSize = static_cast<Elf32_Off>(sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders);
+const Elf32_Off GeneratorElfX86::kFooterSize = static_cast<Elf32_Off>(sizeof(Elf32_Shdr) * kNSectionHeaders);
 
 
 #endif  // GENERATOR_ELF_X86_HPP

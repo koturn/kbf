@@ -1,4 +1,4 @@
-CxxBrainfuck
+CppBrainfuck
 ============
 
 [![Test status](https://travis-ci.org/koturn/CppBrainfuck.png)](https://travis-ci.org/koturn/CppBrainfuck)
