@@ -88,7 +88,7 @@ $(XBYAK_DIR):
 	$(GIT) submodule update --init
 
 test:
-	$(CD) t && $(MAKE) /f $(MAKEFILE) & cd ..
+	@$(CD) t && $(MAKE) /f $(MAKEFILE) & cd ..
 
 ctags:
 	$(CTAGS) $(CTAGSFLAGS)

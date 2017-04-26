@@ -39,7 +39,7 @@ protected:
                      "#else\n"
                      "#  define INLINE\n"
                      "#endif\n"
-                     "#ifndef __GNUC__\n"
+                     "#if !defined(__GNUC__) || defined(_WIN32) || defined(_WIN64)\n"
                      "INLINE static void *\n"
                      "memrchr(const void *s, int c, size_t n);\n"
                      "#endif\n\n\n"
@@ -57,10 +57,11 @@ protected:
     (*oStreamPtr) << indent << "putchar('\\n');\n\n"
                   << indent << "return EXIT_SUCCESS;\n"
                      "}\n\n\n"
-                     "#ifndef __GNUC__\n"
+                     "#if !defined(__GNUC__) || defined(_WIN32) || defined(_WIN64)\n"
                      "INLINE static void *\n"
                      "memrchr(const void *s, int c, size_t n)\n"
                      "{\n"
+                  << indent << "(void) n;"
                   << indent << "const char *_s = (const char *) s;\n"
                   << indent << "char _c = (char) c;\n"
                   << indent << "for (; *_s != _c; _s--);\n"
@@ -218,7 +219,7 @@ protected:
   emitInfLoopImpl() CODE_GENERATOR_NOEXCEPT
   {
     emitIndent();
-    *oStreamPtr << "if (*ptr) {\n";
+    *oStreamPtr << "if (*p) {\n";
     emitIndent();
     *oStreamPtr << indent << "for (;;);\n";
     emitIndent();
