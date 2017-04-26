@@ -32,17 +32,6 @@ protected:
                      "#include <stdlib.h>\n"
                      "#include <string.h>\n\n"
                      "#define MEMORY_SIZE 65536\n\n"
-                     "#if defined(_MSC_VER) || defined(__INTEL_COMPILER)\n"
-                     "#  define INLINE  __forceinline\n"
-                     "#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L || defined(__cplusplus)\n"
-                     "#  define INLINE  inline\n"
-                     "#else\n"
-                     "#  define INLINE\n"
-                     "#endif\n"
-                     "#if !defined(__GNUC__) || defined(_WIN32) || defined(_WIN64)\n"
-                     "INLINE static void *\n"
-                     "memrchr(const void *s, int c, size_t n);\n"
-                     "#endif\n\n\n"
                      "int\n"
                      "main(void)\n"
                      "{\n"
@@ -56,18 +45,7 @@ protected:
   {
     (*oStreamPtr) << indent << "putchar('\\n');\n\n"
                   << indent << "return EXIT_SUCCESS;\n"
-                     "}\n\n\n"
-                     "#if !defined(__GNUC__) || defined(_WIN32) || defined(_WIN64)\n"
-                     "INLINE static void *\n"
-                     "memrchr(const void *s, int c, size_t n)\n"
-                     "{\n"
-                  << indent << "(void) n;"
-                  << indent << "const char *_s = (const char *) s;\n"
-                  << indent << "char _c = (char) c;\n"
-                  << indent << "for (; *_s != _c; _s--);\n"
-                  << indent << "return (void *) _s;\n"
-                     "}\n"
-                     "#endif"
+                     "}"
                   << std::endl;
   }
 
@@ -172,7 +150,7 @@ protected:
       }
     } else {
       if (op1 == -1) {
-        *oStreamPtr << "p = memrchr(p, 0, sizeof(memory));\n";
+        *oStreamPtr << "for (; *p; p--);\n";
       } else {
         *oStreamPtr << "for (; *p; p -= " << -op1 << ");\n";
       }
