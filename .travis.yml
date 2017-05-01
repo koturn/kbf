@@ -1,3 +1,5 @@
+sudo: false
+cache: apt
 language: cpp
 compiler:
   - g++
@@ -6,14 +8,13 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-precise-3.7
+      - llvm-toolchain-precise-3.8
       - llvm-toolchain-precise
     packages:
-      - clang-3.7
-      - g++-5
-      - gcc-5
+      - clang-3.8
+      - g++-6
+      - gcc-6
 install:
-  - if [ "$CXX" = 'g++' ]; then export CXX='g++-5 -std=gnu++14'; fi
-  - if [ "$CXX" = 'clang++' ]; then export CXX='clang++-3.7 -std=gnu++14'; fi
+  - if [ "$CXX" = 'g++' ]; then export CC='g++-6 -std=gnu11' CXX='g++-6 -std=gnu++14'; fi
+  - if [ "$CXX" = 'clang++' ]; then export CC='clang-3.8 -std=gnu11' CXX='clang++-3.8 -std=gnu++14'; fi
 script: make CXX="$CXX" && make test
-sudo: false

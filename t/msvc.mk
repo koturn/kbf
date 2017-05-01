@@ -7,7 +7,7 @@ MKDIR = mkdir
 ECHO = echo
 DIFF = fc
 RM = del /F
-RMDIR = rmdir /Q /S
+RMDIR = rmdir.exe /Q /S
 
 CC = cl /nologo
 CFLAGS = /O2 /W4 /DNDEBUG /D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_WARNINGS /D_SECURE_SCL=0
@@ -48,11 +48,11 @@ interpreter1:
 		@if exist $(INPUTS_DIR)\%~nf.txt ( \
 			$(BRAINFUCK) -O1 %~nf.b < $(INPUTS_DIR)\%~nf.txt > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		) else ( \
 			$(BRAINFUCK) -O1 %~nf.b > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		)
 
 interpreter2:
@@ -61,11 +61,11 @@ interpreter2:
 		@if exist $(INPUTS_DIR)\%~nf.txt ( \
 			$(BRAINFUCK) -O2 %~nf.b < $(INPUTS_DIR)\%~nf.txt > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		) else ( \
 			$(BRAINFUCK) -O2 %~nf.b > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		)
 
 !if "$(PROCESSOR_ARCHITECTURE)" == "x86"
@@ -88,11 +88,11 @@ compile-winx64:
 		@if exist $(INPUTS_DIR)\%~nf.txt ( \
 			$(OUTPUTS_DIR)\winx64\%~nf.exe < $(INPUTS_DIR)\%~nf.txt > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		) else ( \
 			$(OUTPUTS_DIR)\winx64\%~nf.exe > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		)
 
 compile-winx86:
@@ -105,11 +105,11 @@ compile-winx86:
 		@if exist $(INPUTS_DIR)\%~nf.txt ( \
 			$(OUTPUTS_DIR)\winx86\%~nf.exe < $(INPUTS_DIR)\%~nf.txt > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		) else ( \
 			$(OUTPUTS_DIR)\winx86\%~nf.exe > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		)
 
 transpile: transpile-c
@@ -125,13 +125,15 @@ transpile-c:
 		@if exist $(INPUTS_DIR)\%~nf.txt ( \
 			$(OUTPUTS_DIR)\c\%~nf.exe < $(INPUTS_DIR)\%~nf.txt > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		) else ( \
 			$(OUTPUTS_DIR)\c\%~nf.exe > $(OUTPUTS_DIR)\%~nf.txt & \
 			$(DIFF) $(OUTPUTS_DIR)\%~nf.txt $(EXPECTS_DIR)\%~nf.txt > NUL && \
-			$(ECHO) Success || $(ECHO) Failed \
+			$(ECHO) Success || $(ECHO) Failed && exit /b 1 \
 		)
 
 clean:
+	$(RMDIR) $(OUTPUTS_DIR)
+
 distclean:
 	$(RMDIR) $(OUTPUTS_DIR)
