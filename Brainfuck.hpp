@@ -73,7 +73,7 @@ getcharWithFlush() BRAINFUCK_NOEXCEPT
 class Brainfuck
 {
 public:
-  #if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
   /*!
    * @brief Compilation type
    */
@@ -117,7 +117,7 @@ public:
   };  // class CompileType
 #endif  // __cplusplus >= 201103L
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
   /*!
    * @brief Target format
    */
@@ -165,7 +165,7 @@ public:
 #endif  // __cplusplus >= 201103L
 
 private:
-  #if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
   enum class XbyakDirection
   {
     B, F

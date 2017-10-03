@@ -35,7 +35,7 @@
 class ArgumentParser
 {
 public:
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
   /*!
    * @enum OptionType
    * @brief Option type which indicates whether option has an argument or not
