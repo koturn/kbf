@@ -19,13 +19,14 @@
 #  include <map>
 #endif  // __cplusplus >= 201103L
 
-#if __cplusplus >= 201103L
+#if defined(__cplusplus) && __cplusplus >= 201103 \
+  || defined(_MSC_VER) && (_MSC_VER > 1800 || (_MSC_VER == 1800 && _MSC_FULL_VER == 180021114))
 //! Polyfill macro of @code noexcept @endcode
 #  define ARGUMENT_PARSER_NOEXCEPT  noexcept
 #else
 //! Polyfill macro of @code noexcept @endcode
 #  define ARGUMENT_PARSER_NOEXCEPT  throw()
-#endif  // __cplusplus >= 201103L
+#endif
 
 
 /*!
