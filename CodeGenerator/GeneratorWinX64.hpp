@@ -35,8 +35,7 @@ protected:
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {
     // skip header
-    u8 padding[0x400] = {0};
-    write(padding);
+    fill<0x400, u8>(0x00);
 
     // - - - - - The start of program body - - - - - //
     write<u8>(0x56);
@@ -87,8 +86,7 @@ protected:
     // Write padding
     DWORD codeSize = static_cast<DWORD>(oStreamPtr->tellp()) - (kPeHeaderSizeWithPadding + kIdataSizeWithPadding);
     DWORD codeSizeWithPadding = calcAlignedSize(codeSize, 0x1000);
-    std::vector<u8> padding(codeSizeWithPadding - codeSize);
-    write(padding.data(), padding.size());
+    fill<u8>(codeSizeWithPadding - codeSize, 0x00);
     // - - - - - The end of program body - - - - - //
 
     // - - - - - Program header - - - - - //
