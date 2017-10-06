@@ -71,9 +71,9 @@ protected:
   {
 #if __cplusplus >= 201103 || (defined(_MSC_VER) && _MSC_VER >= 1600)
 #  if __cplusplus >= 201402 || (defined(_MSC_VER) && _MSC_VER >= 1800)
-    auto datum = std::make_unique<U>(size);
+    auto datum = std::make_unique<U[]>(size);
 #  else
-    std::unique_ptr<U> datum(size);
+    std::unique_ptr<U[]> datum(new U[size]);
 #  endif  // __cplusplus >= 201402
     std::fill_n(datum.get(), size, element);
     this->oStreamPtr->write(reinterpret_cast<const char*>(datum.get()), sizeof(U) * size);

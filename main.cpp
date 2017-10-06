@@ -10,7 +10,8 @@
 #include "version.h"
 
 
-#if __cplusplus >= 201103L
+#if defined(__cplusplus) && __cplusplus >= 201103 \
+  || defined(_MSC_VER) && (_MSC_VER > 1800 || (_MSC_VER == 1800 && _MSC_FULL_VER == 180021114))
 #  define NOEXCEPT  noexcept
 #else
 #  define NOEXCEPT  throw()
