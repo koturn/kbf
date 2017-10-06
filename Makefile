@@ -92,7 +92,7 @@ CFLAGS        := -pipe $(WARNING_CFLAGS) $(OPT_CFLAGS)
 CXXFLAGS      := -pipe $(WARNING_CXXFLAGS) $(OPT_CXXFLAGS)
 LDFLAGS       := -pipe $(OPT_LDFLAGS)
 LDLIBS        := $(OPT_LDLIBS)
-CTAGSFLAGS    := -R --languages=c,c++
+CTAGSFLAGS    := -R --languages=c,c++ $(addprefix -I,NOEXCEPT ARGUMENT_PARSER_NOEXCEPT BRAINFUCK_NOEXCEPT CODE_GENERATOR_NOEXCEPT)
 DOXYGEN       := doxygen
 DOXYFILE      := Doxyfile
 DOXYGENDISTS  := doxygen_sqlite3.db html/ latex/
