@@ -27,7 +27,7 @@ protected:
   int indentLevel;
 
 public:
-  SourceGenerator(std::ostream& oStream, const std::string& indent_="  ") :
+  SourceGenerator(std::ostream& oStream, const std::string& indent_="  ") CODE_GENERATOR_NOEXCEPT :
     CodeGenerator<T>(oStream),
     indent(indent_),
     indentLevel(0)

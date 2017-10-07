@@ -86,7 +86,7 @@ public:
      * @brief Implicit convert from @code OptionType @endcode to @code OptionTypeEnum @endcode
      * @param [in] value  Enum value
      */
-    OptionType(OptionTypeEnum value) :
+    OptionType(OptionTypeEnum value) ARGUMENT_PARSER_NOEXCEPT :
       value(value)
     {}
     /*!
@@ -401,7 +401,7 @@ public:
   /*!
    * @brief Empty ctor
    */
-  ArgumentParser() :
+  ArgumentParser() ARGUMENT_PARSER_NOEXCEPT :
     progName(),
     indentStr(),
     description(),
@@ -418,7 +418,7 @@ public:
    */
   ArgumentParser(
       const std::string& progName="",
-      const std::string& indentStr="  ") :
+      const std::string& indentStr="  ") ARGUMENT_PARSER_NOEXCEPT :
     progName(progName),
     indentStr(indentStr),
     description(),
@@ -427,58 +427,6 @@ public:
     shortOptMap(),
     longOptMap()
   {}
-
-  /*!
-   * @brief Copy-ctor
-   * @param [in] that  Another instance
-   */
-  ArgumentParser(const ArgumentParser& that) :
-    progName(that.progName),
-    indentStr(that.indentStr),
-    description(that.description),
-    arguments(that.arguments),
-    options(that.options),
-    shortOptMap(that.shortOptMap),
-    longOptMap(that.longOptMap)
-  {}
-
-  /*!
-   * @brief dtor
-   */
-  ~ArgumentParser()
-  {}
-
-  /*!
-   * @brief Copy operator @code operator= @endcode
-   * @param [in] that  Another ArgumentParser object
-   * @return This ArgumentParser object
-   */
-  ArgumentParser&
-  operator=(const ArgumentParser& that)
-  {
-    progName = that.progName;
-    indentStr = that.indentStr;
-    description = that.description;
-    arguments = that.arguments;
-    options = that.options;
-    shortOptMap = that.shortOptMap;
-    longOptMap = that.longOptMap;
-    return *this;
-  }
-
-#if __cplusplus >= 201103L
-  /*!
-   * @brief Move-ctor
-   * @param [in] that Another ArgumentParser object
-   */
-  ArgumentParser(ArgumentParser&& that) = default;
-  /*!
-   * @brief Move-operator=
-   * @param [in] that  Another ArgumentParser object
-   */
-  ArgumentParser&
-  operator=(ArgumentParser&& that) = default;
-#endif  // __cplusplus >= 201103L
 
   /*!
    * @brief Set program name

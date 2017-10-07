@@ -33,7 +33,7 @@ private:
   static const Elf64_Off kFooterSize;
 
 public:
-  GeneratorElfX64(std::ostream& oStream) :
+  GeneratorElfX64(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
     BinaryGenerator<GeneratorElfX64>(oStream)
   {}
 

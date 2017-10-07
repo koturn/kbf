@@ -45,7 +45,7 @@ protected:
   std::stack<std::ostream::pos_type> loopStack;
 
 public:
-  BinaryGenerator(std::ostream& oStream) :
+  BinaryGenerator(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
     CodeGenerator<T>(oStream),
     loopStack()
   {}

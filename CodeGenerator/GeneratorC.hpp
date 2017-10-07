@@ -20,7 +20,7 @@ private:
   friend class CodeGenerator<GeneratorC>;
 
 public:
-  GeneratorC(std::ostream& oStream, const std::string& indent_="  ") :
+  GeneratorC(std::ostream& oStream, const std::string& indent_="  ") CODE_GENERATOR_NOEXCEPT :
     SourceGenerator<GeneratorC>(oStream, indent_)
   {}
 

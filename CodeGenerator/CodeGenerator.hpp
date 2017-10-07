@@ -31,23 +31,23 @@ protected:
   std::ostream* oStreamPtr;
 
 public:
-  CodeGenerator(std::ostream& oStream) :
+  CodeGenerator(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
     oStreamPtr(&oStream)
   {}
 
-  virtual ~CodeGenerator()
-  {}
-
-  CodeGenerator(const CodeGenerator& that) CODE_GENERATOR_NOEXCEPT :
-    oStreamPtr(that.oStreamPtr)
-  {}
+#if __cplusplus >= 201103 && (defined(_MSC_VER) && _MSC_VER >= 1800)
+  CodeGenerator(const CodeGenerator&) = delete;
 
   CodeGenerator&
-  operator=(const CodeGenerator& that) CODE_GENERATOR_NOEXCEPT
-  {
-    oStreamPtr = that.oStreamPtr;
-    return *this;
-  }
+  operator=(const CodeGenerator&) = delete;
+#else
+private:
+  CodeGenerator(const CodeGenerator&);
+
+  CodeGenerator&
+  operator=(const CodeGenerator&);
+public:
+#endif  // __cplusplus >= 201103L && (defined(_MSC_VER) && _MSC_VER >= 1800)
 
   void
   setOutputStream(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT

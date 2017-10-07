@@ -257,7 +257,7 @@ public:
   /*!
    * Empty ctor
    */
-  Brainfuck() :
+  Brainfuck() BRAINFUCK_NOEXCEPT :
     bfSource(""),
     ircode(),
     cg(kDefaultXbyakCodeGeneratorSize),
@@ -267,17 +267,12 @@ public:
   /*!
    * Copy-ctor
    */
-  Brainfuck(const Brainfuck& that) :
+  Brainfuck(const Brainfuck& that) BRAINFUCK_NOEXCEPT :
     bfSource(that.bfSource),
     ircode(that.ircode),
     cg(kDefaultXbyakCodeGeneratorSize),
     state(CompileType::kUnknown)
   {}
-
-  /*!
-   * Dtor
-   */
-  ~Brainfuck() = default;
 
   /*!
    * @brief Copy operator @code operator= @endcode
@@ -289,17 +284,18 @@ public:
   {
     bfSource = that.bfSource;
     ircode = that.ircode;
+    state = that.state;
     return *this;
   }
 
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
   // move-ctor
-  Brainfuck(Brainfuck&& that) = default;
+  Brainfuck(Brainfuck&&) = default;
   // move-operator=
   Brainfuck&
-  operator=(Brainfuck&& that) = default;
-#endif  // __cplusplus >= 201103L
+  operator=(Brainfuck&&) = default;
+#endif  // __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
 
   /*!
    * @brief Load brainfuck source from a file
