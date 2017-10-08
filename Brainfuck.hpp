@@ -59,6 +59,14 @@
 #  define BRAINFUCK_NOEXCEPT  throw()
 #endif
 
+#ifdef __GNUC__
+#  define BRAINFUCK_LIKELY(x)  __builtin_expect(!!(x), 1)
+#  define BRAINFUCK_UNLIKELY(x)  __builtin_expect(!!(x), 0)
+#else
+#  define BRAINFUCK_LIKELY(x)  (x)
+#  define BRAINFUCK_UNLIKELY(x)  (x)
+#endif  //  __GNUC__
+
 
 static int
 getcharWithFlush() BRAINFUCK_NOEXCEPT
@@ -749,7 +757,7 @@ public:
           heap[hp] = static_cast<unsigned char>(std::cin.get());
           break;
         case '[':
-          if (heap[hp] == 0) {
+          if (BRAINFUCK_LIKELY(heap[hp] == 0)) {
             int depth = 1;
             for (pc++; depth > 0; pc++) {
               switch (bfSource[pc]) {
@@ -765,7 +773,7 @@ public:
           }
           break;
         case ']':
-          if (heap[hp] != 0) {
+          if (BRAINFUCK_LIKELY(heap[hp] != 0)) {
             int depth = 1;
             for (pc--; depth > 0; pc--) {
               switch (bfSource[pc]) {
@@ -810,12 +818,12 @@ public:
           heap[hp] = static_cast<unsigned char>(std::cin.get());
           break;
         case BfInst::Type::kLoopStart:
-          if (heap[hp] == 0) {
+          if (BRAINFUCK_LIKELY(heap[hp] == 0)) {
             pc = static_cast<std::size_t>(ircode[pc].op1);
           }
           break;
         case BfInst::Type::kLoopEnd:
-          if (heap[hp] != 0) {
+          if (BRAINFUCK_LIKELY(heap[hp] != 0)) {
             pc = static_cast<std::size_t>(ircode[pc].op1);
           }
           break;
