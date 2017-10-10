@@ -108,7 +108,15 @@ protected:
 
     // Write DOS stub
     const u8 kDosStub[] =
-      "\xba\x10\x00\x0e\x1f\xb4\x09\xcd\x21\xb8\x01\x4c\xcd\x21\x90\x90"
+      "\xba\x10\x00"  // mov dx, 0x0010 (Offset to message data from here)
+      "\x0e"  // push cs
+      "\x1f"  // pop ds
+      "\xb4\x09"  // mov ah, 0x09 (Argument for int 0x21: print)
+      "\xcd\x21"  // int 0x21
+      "\xb8\x01\x4c"  // mov ax, 0x4c01 (Argument for int 0x21: exit)
+      "\xcd\x21"  // int 0x21
+      "\x90"  // nop
+      "\x90"  // nop
       "This program cannot be run in DOS mode.\r\n$\x00\x00\x00\x00\x00";
     write(kDosStub);
 
