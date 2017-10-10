@@ -33,7 +33,7 @@ private:
   static const Elf32_Off kFooterSize;
 
 public:
-  GeneratorElfArmeabi(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
+  explicit GeneratorElfArmeabi(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
     BinaryGenerator<GeneratorElfArmeabi>(oStream)
   {}
 

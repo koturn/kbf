@@ -33,7 +33,7 @@ private:
   static const Elf32_Off kFooterSize;
 
 public:
-  GeneratorElfX86(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
+  explicit GeneratorElfX86(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
     BinaryGenerator<GeneratorElfX86>(oStream)
   {}
 

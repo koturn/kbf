@@ -416,7 +416,7 @@ public:
    * @param [in] progName   Name of a program
    * @param [in] indentStr  Indent string
    */
-  ArgumentParser(
+  explicit ArgumentParser(
       const std::string& progName="",
       const std::string& indentStr="  ") ARGUMENT_PARSER_NOEXCEPT :
     progName(progName),

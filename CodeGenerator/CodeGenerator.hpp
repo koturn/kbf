@@ -31,7 +31,7 @@ protected:
   std::ostream* oStreamPtr;
 
 public:
-  CodeGenerator(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
+  explicit CodeGenerator(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
     oStreamPtr(&oStream)
   {}
 

@@ -81,7 +81,7 @@ struct BfInst {
    * @param [in] op1
    * @param [in] op2
    */
-  BfInst(Type type=Type::kUnknown, int op1=0, int op2=0) :
+  explicit BfInst(Type type=Type::kUnknown, int op1=0, int op2=0) :
     type(type),
     op1(op1),
     op2(op2)

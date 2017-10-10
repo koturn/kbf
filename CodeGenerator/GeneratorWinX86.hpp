@@ -28,7 +28,7 @@ private:
   static const DWORD kIdataSizeWithPadding;
 
 public:
-  GeneratorWinX86(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
+  explicit GeneratorWinX86(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
     BinaryGenerator<GeneratorWinX86>(oStream)
   {}
 
