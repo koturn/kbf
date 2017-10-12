@@ -55,14 +55,14 @@ protected:
   void
   write(const U& data) CODE_GENERATOR_NOEXCEPT
   {
-    this->oStreamPtr->write(reinterpret_cast<const char*>(&data), sizeof(data));
+    this->oStream.write(reinterpret_cast<const char*>(&data), sizeof(data));
   }
 
   template<typename U>
   void
   write(const U* data, std::size_t size) CODE_GENERATOR_NOEXCEPT
   {
-    this->oStreamPtr->write(reinterpret_cast<const char*>(data), size);
+    this->oStream.write(reinterpret_cast<const char*>(data), size);
   }
 
   template<typename U>
@@ -76,11 +76,11 @@ protected:
     std::unique_ptr<U[]> datum(new U[size]);
 #  endif  // __cplusplus >= 201402
     std::fill_n(datum.get(), size, element);
-    this->oStreamPtr->write(reinterpret_cast<const char*>(datum.get()), sizeof(U) * size);
+    this->oStream.write(reinterpret_cast<const char*>(datum.get()), sizeof(U) * size);
 #else
     U* datum = new U[kSize];
     std::fill_n(datum, kSize, element);
-    this->oStreamPtr->write(reinterpret_cast<const char*>(&data), sizeof(data));
+    this->oStream.write(reinterpret_cast<const char*>(&data), sizeof(data));
     delete datum;
 #endif  // __cplusplus >= 201103
   }
@@ -92,11 +92,11 @@ protected:
 #if __cplusplus >= 201103 || (defined(_MSC_VER) && _MSC_VER >= 1600)
     std::array<U, kSize> datum;
     std::fill(std::begin(datum), std::end(datum), element);
-    this->oStreamPtr->write(reinterpret_cast<const char*>(datum.data()), sizeof(U) * datum.size());
+    this->oStream.write(reinterpret_cast<const char*>(datum.data()), sizeof(U) * datum.size());
 #else
     U datum[kSize];
     std::fill_n(datum, kSize, element);
-    this->oStreamPtr->write(reinterpret_cast<const char*>(&data), sizeof(data));
+    this->oStream.write(reinterpret_cast<const char*>(&data), sizeof(data));
 #endif  // __cplusplus >= 201103
   }
 };  // class BinaryGenerator

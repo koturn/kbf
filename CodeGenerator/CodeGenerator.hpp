@@ -28,14 +28,14 @@ class CodeGenerator
 {
 protected:
   //! Output stream pointer
-  std::ostream* oStreamPtr;
+  std::ostream& oStream;
 
 public:
   explicit CodeGenerator(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
-    oStreamPtr(&oStream)
+    oStream(oStream)
   {}
 
-#if __cplusplus >= 201103 && (defined(_MSC_VER) && _MSC_VER >= 1800)
+#if __cplusplus >= 201103 || (defined(_MSC_VER) && _MSC_VER >= 1800)
   CodeGenerator(const CodeGenerator&) = delete;
 
   CodeGenerator&
@@ -48,12 +48,6 @@ private:
   operator=(const CodeGenerator&);
 public:
 #endif  // __cplusplus >= 201103L && (defined(_MSC_VER) && _MSC_VER >= 1800)
-
-  void
-  setOutputStream(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT
-  {
-    oStreamPtr = &oStream;
-  }
 
   void
   emit(const std::vector<BfInst>& ircode) CODE_GENERATOR_NOEXCEPT
@@ -108,7 +102,7 @@ public:
       }
     }
     emitFooter();
-    oStreamPtr->flush();
+    oStream.flush();
   }
 
 private:

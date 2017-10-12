@@ -80,7 +80,7 @@ protected:
     write(opcode3);
     // - - - - - The end of program body - - - - - //
 
-    Elf32_Off codeSize = static_cast<Elf32_Off>(oStreamPtr->tellp()) - kHeaderSize;
+    Elf32_Off codeSize = static_cast<Elf32_Off>(oStream.tellp()) - kHeaderSize;
 
     // - - - - - Program footer - - - - - //
     // Section string table (22bytes)
@@ -141,7 +141,7 @@ protected:
     write(shdr);
 
     // - - - - - Program header - - - - - //
-    oStreamPtr->seekp(0, std::ios_base::beg);
+    oStream.seekp(0, std::ios_base::beg);
     // ELF header
     Elf32_Ehdr ehdr;
     std::fill_n(ehdr.e_ident, sizeof(ehdr.e_ident), 0x00);
@@ -193,7 +193,7 @@ protected:
     phdr.p_align = 0x00200000;
     write(phdr);
 
-    oStreamPtr->seekp(0, std::ios_base::end);
+    oStream.seekp(0, std::ios_base::end);
   }
 
   void
@@ -295,7 +295,7 @@ protected:
   void
   emitLoopStartImpl() CODE_GENERATOR_NOEXCEPT
   {
-    loopStack.push(oStreamPtr->tellp());
+    loopStack.push(oStream.tellp());
     // ldrb r8, [r1]
     u32 opcode1 = 0xe5d18000;
     write(opcode1);
@@ -311,16 +311,16 @@ protected:
   emitLoopEndImpl() CODE_GENERATOR_NOEXCEPT
   {
     std::ostream::pos_type pos = loopStack.top();
-    std::ostream::pos_type curPos = oStreamPtr->tellp();
+    std::ostream::pos_type curPos = oStream.tellp();
     int offset = static_cast<int>(curPos - pos) / 4;
     // b #*
     u32 opcode1 = (0xea000000 | (0x00ffffff & -(offset + 2)));
     // beq #*
     u32 opcode2 = (0x0a000000 | (0x00ffffff & (offset - 3)));
     write(opcode1);
-    oStreamPtr->seekp(pos + static_cast<std::ostream::pos_type>(8), std::ios_base::beg);
+    oStream.seekp(pos + static_cast<std::ostream::pos_type>(8), std::ios_base::beg);
     write(opcode2);
-    oStreamPtr->seekp(0, std::ios_base::end);
+    oStream.seekp(0, std::ios_base::end);
     loopStack.pop();
   }
 
@@ -337,13 +337,13 @@ protected:
   emitEndIfImpl() CODE_GENERATOR_NOEXCEPT
   {
     std::ostream::pos_type pos = loopStack.top();
-    std::ostream::pos_type curPos = oStreamPtr->tellp();
+    std::ostream::pos_type curPos = oStream.tellp();
     int offset = static_cast<int>(curPos - pos) / 4;
     // beq #*
     u32 opcode1 = (0x0a000000 | (0x00ffffff & (offset - 2)));
-    oStreamPtr->seekp(pos + static_cast<std::ostream::pos_type>(8), std::ios_base::beg);
+    oStream.seekp(pos + static_cast<std::ostream::pos_type>(8), std::ios_base::beg);
     write(opcode1);
-    oStreamPtr->seekp(0, std::ios_base::end);
+    oStream.seekp(0, std::ios_base::end);
     loopStack.pop();
   }
 

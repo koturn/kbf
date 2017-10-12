@@ -7,6 +7,7 @@
 #define SOURCE_GENERATOR_HPP
 
 #include <iostream>
+#include <string>
 
 #include "CodeGenerator.hpp"
 
@@ -37,7 +38,7 @@ public:
   emitIndent() CODE_GENERATOR_NOEXCEPT
   {
     for (int i = 0; i < indentLevel; i++) {
-      (*(this->oStreamPtr)) << indent;
+      this->oStream << indent;
     }
   }
 };  // class SourceGenerator

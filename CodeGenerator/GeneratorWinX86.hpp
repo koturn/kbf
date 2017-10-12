@@ -64,7 +64,7 @@ protected:
     // mov esi, ds:{0x********}  # exit
     u8 opcode1[] = {0x8b, 0x35};
     write(opcode1);
-    std::ostream::pos_type exitAddrPos = oStreamPtr->tellp();
+    std::ostream::pos_type exitAddrPos = oStream.tellp();
     write<u32>(0x00000000);  // Fill after
     // push 0x00
     u8 opcode3[] = {0x6a};
@@ -75,13 +75,13 @@ protected:
     write(opcode4);
 
     // Write padding
-    DWORD codeSize = static_cast<DWORD>(oStreamPtr->tellp()) - (kPeHeaderSizeWithPadding + kIdataSizeWithPadding);
+    DWORD codeSize = static_cast<DWORD>(oStream.tellp()) - (kPeHeaderSizeWithPadding + kIdataSizeWithPadding);
     DWORD codeSizeWithPadding = calcAlignedSize(codeSize, 0x1000);
     fill<u8>(codeSizeWithPadding - codeSize, 0x00);
     // - - - - - The end of program body - - - - - //
 
     // - - - - - Program header - - - - - //
-    oStreamPtr->seekp(0, std::ios_base::beg);
+    oStream.seekp(0, std::ios_base::beg);
 
     // Write DOS header
     IMAGE_DOS_HEADER idh;
@@ -226,7 +226,7 @@ protected:
       | IMAGE_SCN_MEM_WRITE;
     write(ishBss);
 
-    oStreamPtr->seekp(kPeHeaderSizeWithPadding, std::ios_base::beg);
+    oStream.seekp(kPeHeaderSizeWithPadding, std::ios_base::beg);
 
     const char kDllName[] = "msvcrt.dll\0\0\0\0\0";
     const char kPutcharName[] = "putchar";
@@ -263,16 +263,16 @@ protected:
     write<WORD>(0x0000);
     write(kExitName);
 
-    oStreamPtr->seekp(ishText.PointerToRawData + 0x02, std::ios_base::beg);
+    oStream.seekp(ishText.PointerToRawData + 0x02, std::ios_base::beg);
     write(ioh.ImageBase + iids[0].FirstThunk);  // Fill putchar() address
-    oStreamPtr->seekp(ishText.PointerToRawData + 0x08, std::ios_base::beg);
+    oStream.seekp(ishText.PointerToRawData + 0x08, std::ios_base::beg);
     write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk + sizeof(DWORD)));  // Fill getchar() address
-    oStreamPtr->seekp(exitAddrPos, std::ios_base::beg);
+    oStream.seekp(exitAddrPos, std::ios_base::beg);
     write(static_cast<u32>(ioh.ImageBase + iids[0].FirstThunk + sizeof(DWORD) * 2));  // Fill exit() address
-    oStreamPtr->seekp(ishText.PointerToRawData + 0x0d, std::ios_base::beg);
+    oStream.seekp(ishText.PointerToRawData + 0x0d, std::ios_base::beg);
     write(ioh.ImageBase + ishBss.VirtualAddress);  // Fill .bss address
 
-    oStreamPtr->seekp(0, std::ios_base::end);
+    oStream.seekp(0, std::ios_base::end);
   }
 
   void
@@ -369,7 +369,7 @@ protected:
   void
   emitLoopStartImpl() CODE_GENERATOR_NOEXCEPT
   {
-    loopStack.push(oStreamPtr->tellp());
+    loopStack.push(oStream.tellp());
     // cmp byte ptr [ebx], 0x00
     u8 opcode1[] = {0x80, 0x3b};
     write(opcode1);
@@ -384,7 +384,7 @@ protected:
   emitLoopEndImpl() CODE_GENERATOR_NOEXCEPT
   {
     std::ostream::pos_type pos = loopStack.top();
-    int offset = static_cast<int>(pos - oStreamPtr->tellp()) - 1;
+    int offset = static_cast<int>(pos - oStream.tellp()) - 1;
     if (offset - static_cast<int>(sizeof(u8)) < -128) {
       // jmp {offset} (near jump)
       u8 opcode = {0xe9};
@@ -397,10 +397,10 @@ protected:
       write(static_cast<u8>(offset - sizeof(u8)));
     }
     // fill loop start
-    std::ostream::pos_type curPos = oStreamPtr->tellp();
-    oStreamPtr->seekp(pos + static_cast<std::ostream::pos_type>(5), std::ios_base::beg);
-    write(static_cast<u32>(curPos - oStreamPtr->tellp() - sizeof(u32)));
-    oStreamPtr->seekp(curPos, std::ios_base::beg);
+    std::ostream::pos_type curPos = oStream.tellp();
+    oStream.seekp(pos + static_cast<std::ostream::pos_type>(5), std::ios_base::beg);
+    write(static_cast<u32>(curPos - oStream.tellp() - sizeof(u32)));
+    oStream.seekp(curPos, std::ios_base::beg);
     loopStack.pop();
   }
 
@@ -409,10 +409,10 @@ protected:
   {
     // fill if jump
     std::ostream::pos_type pos = loopStack.top();
-    std::ostream::pos_type curPos = oStreamPtr->tellp();
-    oStreamPtr->seekp(pos + static_cast<std::ostream::pos_type>(5), std::ios_base::beg);
-    write(static_cast<u32>(curPos - oStreamPtr->tellp() - sizeof(u32)));
-    oStreamPtr->seekp(curPos, std::ios_base::beg);
+    std::ostream::pos_type curPos = oStream.tellp();
+    oStream.seekp(pos + static_cast<std::ostream::pos_type>(5), std::ios_base::beg);
+    write(static_cast<u32>(curPos - oStream.tellp() - sizeof(u32)));
+    oStream.seekp(curPos, std::ios_base::beg);
     loopStack.pop();
   }
 

@@ -28,25 +28,25 @@ protected:
   void
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {
-    (*oStreamPtr) << "#include <stdio.h>\n"
-                     "#include <stdlib.h>\n"
-                     "#include <string.h>\n\n"
-                     "#define MEMORY_SIZE 65536\n\n"
-                     "int\n"
-                     "main(void)\n"
-                     "{\n"
-                  << indent << "unsigned char memory[MEMORY_SIZE] = {0};\n"
-                  << indent << "unsigned char *p = memory;\n\n";
+    oStream << "#include <stdio.h>\n"
+               "#include <stdlib.h>\n"
+               "#include <string.h>\n\n"
+               "#define MEMORY_SIZE 65536\n\n"
+               "int\n"
+               "main(void)\n"
+               "{\n"
+            << indent << "unsigned char memory[MEMORY_SIZE] = {0};\n"
+            << indent << "unsigned char *p = memory;\n\n";
     indentLevel++;
   }
 
   void
   emitFooterImpl() CODE_GENERATOR_NOEXCEPT
   {
-    (*oStreamPtr) << indent << "putchar('\\n');\n\n"
-                  << indent << "return EXIT_SUCCESS;\n"
-                     "}"
-                  << std::endl;
+    oStream << indent << "putchar('\\n');\n\n"
+            << indent << "return EXIT_SUCCESS;\n"
+               "}"
+            << std::endl;
   }
 
   void
@@ -55,15 +55,15 @@ protected:
     emitIndent();
     if (op1 > 0) {
       if (op1 == 1) {
-        *oStreamPtr << "p++;\n";
+        oStream << "p++;\n";
       } else {
-        *oStreamPtr << "p += " << op1 << ";\n";
+        oStream << "p += " << op1 << ";\n";
       }
     } else {
       if (op1 == -1) {
-        *oStreamPtr << "p--;\n";
+        oStream << "p--;\n";
       } else {
-        *oStreamPtr << "p -= " << -op1 << ";\n";
+        oStream << "p -= " << -op1 << ";\n";
       }
     }
   }
@@ -74,15 +74,15 @@ protected:
     emitIndent();
     if (op1 > 0) {
       if (op1 == 1) {
-        *oStreamPtr << "(*p)++;\n";
+        oStream << "(*p)++;\n";
       } else {
-        *oStreamPtr << "*p += " << op1 << ";\n";
+        oStream << "*p += " << op1 << ";\n";
       }
     } else {
       if (op1 == -1) {
-        *oStreamPtr << "(*p)--;\n";
+        oStream << "(*p)--;\n";
       } else {
-        *oStreamPtr << "*p -= " << -op1 << ";\n";
+        oStream << "*p -= " << -op1 << ";\n";
       }
     }
   }
@@ -91,21 +91,21 @@ protected:
   emitPutcharImpl() CODE_GENERATOR_NOEXCEPT
   {
     emitIndent();
-    *oStreamPtr << "putchar(*p);\n";
+    oStream << "putchar(*p);\n";
   }
 
   void
   emitGetcharImpl() CODE_GENERATOR_NOEXCEPT
   {
     emitIndent();
-    *oStreamPtr << "*p = (unsigned char) getchar();\n";
+    oStream << "*p = (unsigned char) getchar();\n";
   }
 
   void
   emitLoopStartImpl() CODE_GENERATOR_NOEXCEPT
   {
     emitIndent();
-    *oStreamPtr << "while (*p) {\n";
+    oStream << "while (*p) {\n";
     indentLevel++;
   }
 
@@ -114,14 +114,14 @@ protected:
   {
     indentLevel--;
     emitIndent();
-    *oStreamPtr << "}\n";
+    oStream << "}\n";
   }
 
   void
   emitIfImpl() CODE_GENERATOR_NOEXCEPT
   {
     emitIndent();
-    *oStreamPtr << "if (*p) {\n";
+    oStream << "if (*p) {\n";
     indentLevel++;
   }
 
@@ -135,7 +135,7 @@ protected:
   emitAssignImpl(int op1) CODE_GENERATOR_NOEXCEPT
   {
     emitIndent();
-    *oStreamPtr << "*p = " << op1 << ";\n";
+    oStream << "*p = " << op1 << ";\n";
   }
 
   void
@@ -144,15 +144,15 @@ protected:
     emitIndent();
     if (op1 > 0) {
       if (op1 == 1) {
-        *oStreamPtr << "p = memchr(p, 0, sizeof(memory));\n";
+        oStream << "p = memchr(p, 0, sizeof(memory));\n";
       } else {
-        *oStreamPtr << "for (; *p; p += " << op1 << ");\n";
+        oStream << "for (; *p; p += " << op1 << ");\n";
       }
     } else {
       if (op1 == -1) {
-        *oStreamPtr << "for (; *p; p--);\n";
+        oStream << "for (; *p; p--);\n";
       } else {
-        *oStreamPtr << "for (; *p; p -= " << -op1 << ");\n";
+        oStream << "for (; *p; p -= " << -op1 << ");\n";
       }
     }
   }
@@ -162,11 +162,11 @@ protected:
   {
     emitIndent();
     if (op1 > 0) {
-      *oStreamPtr << "*(p + " << op1;
+      oStream << "*(p + " << op1;
     } else {
-      *oStreamPtr << "*(p - " << -op1;
+      oStream << "*(p - " << -op1;
     }
-    *oStreamPtr << ") += *p;\n";
+    oStream << ") += *p;\n";
   }
 
   void
@@ -174,11 +174,11 @@ protected:
   {
     emitIndent();
     if (op1 > 0) {
-      *oStreamPtr << "*(p + " << op1;
+      oStream << "*(p + " << op1;
     } else {
-      *oStreamPtr << "*(p - " << -op1;
+      oStream << "*(p - " << -op1;
     }
-    *oStreamPtr << ") -= *p;\n";
+    oStream << ") -= *p;\n";
   }
 
   void
@@ -186,22 +186,22 @@ protected:
   {
     emitIndent();
     if (op1 > 0) {
-      *oStreamPtr << "*(p + " << op1;
+      oStream << "*(p + " << op1;
     } else {
-      *oStreamPtr << "*(p - " << -op1;
+      oStream << "*(p - " << -op1;
     }
-    *oStreamPtr << ") += *p * " << op2 << ";\n";
+    oStream << ") += *p * " << op2 << ";\n";
   }
 
   void
   emitInfLoopImpl() CODE_GENERATOR_NOEXCEPT
   {
     emitIndent();
-    *oStreamPtr << "if (*p) {\n";
+    oStream << "if (*p) {\n";
     emitIndent();
-    *oStreamPtr << indent << "for (;;);\n";
+    oStream << indent << "for (;;);\n";
     emitIndent();
-    *oStreamPtr << "}\n";
+    oStream << "}\n";
   }
 };  // class GeneratorC
 
