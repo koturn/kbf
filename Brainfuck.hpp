@@ -199,13 +199,10 @@ private:
   };  // class XbyakDirection
 #endif  // __cplusplus >= 201103L
 
-
-  //! Brainfuck characters: +-><.,[]
-  static const std::string kBrainfuckCharacters;
   //! Default eap size
-  static const std::size_t kDefaultHeapSize;
+  static const std::size_t kDefaultHeapSize = 65536;
   //! Default code generator size
-  static const std::size_t kDefaultXbyakCodeGeneratorSize;
+  static const std::size_t kDefaultXbyakCodeGeneratorSize = 1048576;
   //! Brainfuck source code
   std::string bfSource;
   //! IR code
@@ -297,7 +294,7 @@ public:
   }
 
 
-#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && (_MSC_VER > 1800 || _MSC_FULL_VER == 180021114))
   // move-ctor
   Brainfuck(Brainfuck&&) = default;
   // move-operator=
@@ -347,14 +344,15 @@ public:
   void
   trim() BRAINFUCK_NOEXCEPT
   {
+    static const std::string kBrainfuckCharacters = "+-><.,[]";
     bfSource.erase(
-        std::remove_if(
-          bfSource.begin(),
-          bfSource.end(),
-          [&](const decltype(bfSource)::value_type& ch) {
-            return kBrainfuckCharacters.find_first_of(ch) == std::string::npos;
-          }),
-        bfSource.end());
+      std::remove_if(
+        bfSource.begin(),
+        bfSource.end(),
+        [&](const decltype(kBrainfuckCharacters)::value_type& ch) {
+          return kBrainfuckCharacters.find_first_of(ch) == std::string::npos;
+        }),
+      bfSource.end());
   }
 
   /*!
@@ -1089,11 +1087,6 @@ public:
     return is;
   }
 };  // class Brainfuck
-
-
-const std::string Brainfuck::kBrainfuckCharacters = "+-><.,[]";
-const std::size_t Brainfuck::kDefaultHeapSize = 65536;
-const std::size_t Brainfuck::kDefaultXbyakCodeGeneratorSize = 1048576;
 
 
 #endif  // BRAINFUCK_HPP

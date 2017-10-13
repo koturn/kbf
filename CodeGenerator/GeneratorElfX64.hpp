@@ -20,17 +20,17 @@ class GeneratorElfX64 : public BinaryGenerator<GeneratorElfX64>
 private:
   friend class CodeGenerator<GeneratorElfX64>;
   //! Address of .text section
-  static const Elf64_Addr kBaseAddr;
+  static const Elf64_Addr kBaseAddr = 0x04048000;
   //! Address of .bss section
-  static const Elf64_Addr kBssAddr;
+  static const Elf64_Addr kBssAddr = 0x04248000;
   //! Number of program headers
-  static const Elf64_Half kNProgramHeaders;
+  static const Elf64_Half kNProgramHeaders = 2;
   //! Number of section headers
-  static const Elf64_Half kNSectionHeaders;
+  static const Elf64_Half kNSectionHeaders = 4;
   //! Program header size
-  static const Elf64_Off kHeaderSize;
+  static const Elf64_Off kHeaderSize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * kNProgramHeaders;
   //! Program footer size
-  static const Elf64_Off kFooterSize;
+  static const Elf64_Off kFooterSize = sizeof(Elf64_Shdr) * kNSectionHeaders;
 
 public:
   explicit GeneratorElfX64(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
@@ -438,14 +438,6 @@ protected:
     emitEndIfImpl();
   }
 };  // class GeneratorElfX64
-
-
-const Elf64_Addr GeneratorElfX64::kBaseAddr = 0x04048000;
-const Elf64_Addr GeneratorElfX64::kBssAddr = 0x04248000;
-const Elf64_Half GeneratorElfX64::kNProgramHeaders = 2;
-const Elf64_Half GeneratorElfX64::kNSectionHeaders = 4;
-const Elf64_Off GeneratorElfX64::kHeaderSize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * kNProgramHeaders;
-const Elf64_Off GeneratorElfX64::kFooterSize = sizeof(Elf64_Shdr) * kNSectionHeaders;
 
 
 #endif  // GENERATOR_ELF_X64_HPP

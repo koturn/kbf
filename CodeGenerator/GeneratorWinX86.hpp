@@ -21,11 +21,11 @@ class GeneratorWinX86 : public BinaryGenerator<GeneratorWinX86>
 private:
   friend class CodeGenerator<GeneratorWinX86>;
   //! Address of .text section
-  static const DWORD kBaseAddr;
+  static const DWORD kBaseAddr = 0x00400000;
   //! Size of PE header with padding
-  static const DWORD kPeHeaderSizeWithPadding;
+  static const DWORD kPeHeaderSizeWithPadding = 0x0200;
   //! Size of .idata with padding
-  static const DWORD kIdataSizeWithPadding;
+  static const DWORD kIdataSizeWithPadding = 0x0200;
 
 public:
   explicit GeneratorWinX86(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
@@ -514,11 +514,6 @@ protected:
     emitEndIfImpl();
   }
 };  // class GeneratorWinX86
-
-
-const DWORD GeneratorWinX86::kBaseAddr = 0x00400000;
-const DWORD GeneratorWinX86::kPeHeaderSizeWithPadding = 0x0200;
-const DWORD GeneratorWinX86::kIdataSizeWithPadding = 0x0200;
 
 
 #endif  // GENERATOR_WIN_X86_HPP

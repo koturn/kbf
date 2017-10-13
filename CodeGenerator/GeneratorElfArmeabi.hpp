@@ -20,17 +20,17 @@ class GeneratorElfArmeabi : public BinaryGenerator<GeneratorElfArmeabi>
 private:
   friend class CodeGenerator<GeneratorElfArmeabi>;
   //! Address of .text section
-  static const Elf32_Addr kBaseAddr;
+  static const Elf32_Addr kBaseAddr = 0x00010000;
   //! Address of .bss section
-  static const Elf32_Addr kBssAddr;
+  static const Elf32_Addr kBssAddr = 0x00210000;
   //! Number of program headers
-  static const Elf32_Half kNProgramHeaders;
+  static const Elf32_Half kNProgramHeaders = 2;
   //! Number of section headers
-  static const Elf32_Half kNSectionHeaders;
+  static const Elf32_Half kNSectionHeaders = 4;
   //! Program header size
-  static const Elf32_Off kHeaderSize;
+  static const Elf32_Off kHeaderSize = static_cast<Elf32_Off>(sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders);
   //! Program footer size
-  static const Elf32_Off kFooterSize;
+  static const Elf32_Off kFooterSize = static_cast<Elf32_Off>(sizeof(Elf32_Shdr)) * kNSectionHeaders;
 
 public:
   explicit GeneratorElfArmeabi(std::ostream& oStream) CODE_GENERATOR_NOEXCEPT :
@@ -440,14 +440,6 @@ protected:
   }
 #endif
 };  // class GeneratorElfArmeabi
-
-
-const Elf32_Addr GeneratorElfArmeabi::kBaseAddr = 0x00010000;
-const Elf32_Addr GeneratorElfArmeabi::kBssAddr = 0x00210000;
-const Elf32_Half GeneratorElfArmeabi::kNProgramHeaders = 2;
-const Elf32_Half GeneratorElfArmeabi::kNSectionHeaders = 4;
-const Elf32_Off GeneratorElfArmeabi::kHeaderSize = static_cast<Elf32_Off>(sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders);
-const Elf32_Off GeneratorElfArmeabi::kFooterSize = static_cast<Elf32_Off>(sizeof(Elf32_Shdr)) * kNSectionHeaders;
 
 
 #endif  // GENERATOR_ELF_ARMEABI_HPP

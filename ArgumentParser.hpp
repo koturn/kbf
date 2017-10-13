@@ -154,11 +154,11 @@ private:
   };
 
   //! Meta variable name
-  static const std::string DEFAULT_METAVAR;
+  static const std::string kDefaultMetavar;
   //! String which evaluate to @code true @endcode in @code std::stringstream or @code std::stoi() @endcode
-  static const std::string STRING_TRUE;
+  static const std::string kStringTrue;
   //! String which evaluate to @code true @endcode in @code std::stringstream or @code std::stoi() @endcode
-  static const std::string STRING_FALSE;
+  static const std::string kStringFalse;
 
   //! Name of a program
   std::string progName;
@@ -284,7 +284,7 @@ private:
       }
       OptionItem& item = options[shortOptMap[shortName]];
       if (item.optType == OptionType::kNoArgument) {
-        item.value = STRING_TRUE;
+        item.value = kStringTrue;
       } else if (i == optBody.length() - 1) {
         if (idx + 1 >= args.size()) {
           throw std::runtime_error("Option requires an argument: -" + std::string(1, static_cast<char>(shortName)));
@@ -336,10 +336,10 @@ private:
         if (pos != std::string::npos) {
           throw std::runtime_error("Option doesn't take an argument: --" + longOptName);
         }
-        item.value = STRING_TRUE;
+        item.value = kStringTrue;
         return idx;
       case OptionType::kOptionalArgument:
-        item.value = (pos == std::string::npos ? STRING_TRUE : value);
+        item.value = (pos == std::string::npos ? kStringTrue : value);
         return idx;
       case OptionType::kRequiredArgument:
         if (pos == std::string::npos) {
@@ -488,10 +488,10 @@ public:
       const std::string& longOptName,
       OptionType optType,
       const std::string& description_="",
-      const std::string& metavar=DEFAULT_METAVAR,
+      const std::string& metavar=kDefaultMetavar,
       const std::string& defaultValue="")
   {
-    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? STRING_FALSE : defaultValue);
+    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? kStringFalse : defaultValue);
     shortOptMap[shortOptName] = options.size();
     longOptMap[longOptName] = options.size();
 #if __cplusplus >= 201103L
@@ -514,10 +514,10 @@ public:
       int shortOptName,
       OptionType optType,
       const std::string& description_="",
-      const std::string& metavar=DEFAULT_METAVAR,
+      const std::string& metavar=kDefaultMetavar,
       const std::string& defaultValue="")
   {
-    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? STRING_FALSE : defaultValue);
+    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? kStringFalse : defaultValue);
     shortOptMap[shortOptName] = options.size();
 #if __cplusplus >= 201103L
     options.emplace_back(OptionItem(shortOptName, "", optType, description_, metavar, dv));
@@ -539,10 +539,10 @@ public:
       const std::string& longOptName,
       OptionType optType,
       const std::string& description_="",
-      const std::string& metavar=DEFAULT_METAVAR,
+      const std::string& metavar=kDefaultMetavar,
       const std::string& defaultValue="")
   {
-    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? STRING_FALSE : defaultValue);
+    const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? kStringFalse : defaultValue);
     longOptMap[longOptName] = options.size();
 #if __cplusplus >= 201103L
     options.emplace_back(OptionItem(-1, longOptName, optType, description_, metavar, dv));
@@ -628,7 +628,7 @@ public:
       const std::string& longOptName,
       const std::string& description_)
   {
-    add(shortOptName, longOptName, OptionType::kNoArgument, description_, "", STRING_FALSE);
+    add(shortOptName, longOptName, OptionType::kNoArgument, description_, "", kStringFalse);
   }
 
   /*!
@@ -641,7 +641,7 @@ public:
       int shortOptName,
       const std::string& description_)
   {
-    add(shortOptName, OptionType::kNoArgument, description_, "", STRING_FALSE);
+    add(shortOptName, OptionType::kNoArgument, description_, "", kStringFalse);
   }
 
   /*!
@@ -654,7 +654,7 @@ public:
       const std::string& longOptName,
       const std::string& description_)
   {
-    add(longOptName, OptionType::kNoArgument, description_, "", STRING_FALSE);
+    add(longOptName, OptionType::kNoArgument, description_, "", kStringFalse);
   }
 
   /*!
@@ -948,9 +948,9 @@ public:
 };  // class ArgumentParser
 
 
-const std::string ArgumentParser::DEFAULT_METAVAR = "ARG";
-const std::string ArgumentParser::STRING_TRUE = "1";
-const std::string ArgumentParser::STRING_FALSE = "0";
+const std::string ArgumentParser::kDefaultMetavar = "ARG";
+const std::string ArgumentParser::kStringTrue = "1";
+const std::string ArgumentParser::kStringFalse = "0";
 
 
 #endif  // ARGUMENT_PARSER_HPP
