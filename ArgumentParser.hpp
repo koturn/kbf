@@ -40,7 +40,7 @@
 class ArgumentParser
 {
 public:
-#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
   /*!
    * @enum OptionType
    * @brief Option type which indicates whether option has an argument or not
@@ -174,7 +174,7 @@ private:
   std::vector<std::string> arguments;
   //! Options
   std::vector<OptionItem> options;
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
   //! Map which associates a short option name with an option attribute
   std::unordered_map<int, std::vector<OptionItem>::size_type> shortOptMap;
   //! Map which associates a long option name with an option attribute
@@ -184,7 +184,7 @@ private:
   std::map<int, std::vector<OptionItem>::size_type> shortOptMap;
   //! Map which associates a long option name with an option attribute
   std::map<std::string, std::vector<OptionItem>::size_type> longOptMap;
-#endif  // __cplusplus >= 201103L
+#endif  // __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
 
   /*!
    * @brief Convert any type to std::string using std::stringstream
@@ -315,19 +315,16 @@ private:
     std::string longOptName, value;
     std::string::size_type pos = splitFirstPos(args[idx].substr(2), '=', longOptName, value);
     std::vector<std::vector<OptionItem>::size_type> indices;
-#if __cplusplus >= 201103L
-    for (auto&& kv : longOptMap) {
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
+    for (const auto& kv : longOptMap) {
+#else
+    for (std::map<std::string, std::vector<OptionItem>::size_type>::const_iterator itr = longOptMap.begin(); itr != longOptMap.end(); ++itr) {
+      const std::pair<std::string, std::vector<OptionItem>& kv = *itr;
+#endif  //  __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
       if (kv.first.find(longOptName) == 0) {
         indices.push_back(kv.second);
       }
     }
-#else
-    for (std::map<std::string, std::vector<OptionItem>::size_type>::const_iterator itr = longOptMap.begin(); itr != longOptMap.end(); ++itr) {
-      if (itr->first.find(longOptName) == 0) {
-        indices.push_back(itr->second);
-      }
-    }
-#endif  // __cplusplus >= 201103L
 
     if (indices.size() == 0) {
       throw std::runtime_error("Unknown option: --" + longOptName);
@@ -402,19 +399,6 @@ private:
   }
 
 public:
-  /*!
-   * @brief Empty ctor
-   */
-  ArgumentParser() ARGUMENT_PARSER_NOEXCEPT :
-    progName(),
-    indentStr(),
-    description(),
-    arguments(),
-    options(),
-    shortOptMap(),
-    longOptMap()
-  {}
-
   /*!
    * @brief A ctor which recieves program name only
    * @param [in] progName   Name of a program
@@ -807,7 +791,7 @@ public:
   T
   get(
       int shortOptName,
-      const F& convert)
+      const F& converter)
   {
     return converter(get(shortOptName));
   }
@@ -886,8 +870,12 @@ public:
     os << "[Usage]\n"
        << progName << " [Options ...] [Arguments ...]\n\n"
        << "[Options]\n";
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
     for (const auto& item : options) {
+#else
+    for (std::vector<OptionItem>::const_iterator itr = options.begin(); itr != options.end(); ++itr) {
+      const OptionItem& item = *itr;
+#endif  //  __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
       os << indentStr;
       if (item.longOptName.empty()) {
         showShortOptionDescription(os, item);
@@ -900,21 +888,6 @@ public:
       }
       os << "\n" << indentStr << indentStr << item.description << std::endl;
     }
-#else
-    for (std::vector<OptionItem>::const_iterator itr = options.begin(); itr != options.end(); ++itr) {
-      os << indentStr;
-      if (itr->longOptName.empty()) {
-        showShortOptionDescription(os, *itr);
-      } else if (itr->shortOptName == -1) {
-        showLongOptionDescription(os, *itr);
-      } else {
-        showShortOptionDescription(os, *itr);
-        os << ", ";
-        showLongOptionDescription(os, *itr);
-      }
-      os << "\n" << indentStr << indentStr << itr->description << std::endl;
-    }
-#endif  // __cplusplus >= 201103L
   }
 
   /*!

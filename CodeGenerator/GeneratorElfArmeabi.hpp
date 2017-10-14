@@ -42,11 +42,7 @@ protected:
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {
     // skip header
-    Elf32_Ehdr ehdr;
-    write(ehdr);
-    Elf32_Phdr phdr;
-    write(phdr);
-    write(phdr);
+    fill<sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders>(0x00);
 
     // - - - - - The start of program body - - - - - //
     // ldr r1,[pc]

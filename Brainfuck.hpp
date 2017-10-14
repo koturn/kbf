@@ -40,7 +40,11 @@
 #    pragma GCC diagnostic ignored "-Wsuggest-override"
 #    pragma GCC diagnostic ignored "-Wuseless-cast"
 #    pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
-#  endif
+#  else
+#    pragma GCC diagnostic ignored "-Wundef"
+#    pragma GCC diagnostic ignored "-Wuseless-cast"
+#    pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
+#  endif  // __cplusplus >= 201103L
 #endif  // BRAINFUCK_GNUC_PREREQ(4, 6)
 #include <xbyak/xbyak.h>
 #if BRAINFUCK_GNUC_PREREQ(4, 6)
@@ -51,7 +55,7 @@
 #include "BfInst.h"
 
 #if defined(__cplusplus) && __cplusplus >= 201103 \
-  || defined(_MSC_VER) && (_MSC_VER > 1800 || (_MSC_VER == 1800 && _MSC_FULL_VER == 180021114))
+  || defined(_MSC_VER) && (_MSC_VER > 1800 || _MSC_FULL_VER == 180021114)
 //! Polyfill macro of @code noexcept @endcode
 #  define BRAINFUCK_NOEXCEPT  noexcept
 #else
@@ -61,7 +65,7 @@
 
 #if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
 #  define BRAINFUCK_EMPLACE_AVAILABLE
-#endif
+#endif //  __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
 
 
 #ifdef __GNUC__
@@ -81,13 +85,26 @@ getcharWithFlush() BRAINFUCK_NOEXCEPT
 }
 
 
+#if __cplusplus < 201103L && defined(_MSC_VER) && _MSC_VER < 1600
+struct IsBrainfuckCharacter
+{
+  bool
+  operator()(const std::string::value_type& ch) const BRAINFUCK_NOEXCEPT
+  {
+    static const std::string kBrainfuckCharacters = "+-><.,[]";
+    return kBrainfuckCharacters.find_first_of(ch) == std::string::npos;
+  }
+};
+#endif  // __cplusplus < 201103L && defined(_MSC_VER) && _MSC_VER < 1600
+
+
 /*!
  * @brief Brainfuck processor
  */
 class Brainfuck
 {
 public:
-#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1700)
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
   /*!
    * @brief Compilation type
    */
@@ -305,7 +322,7 @@ public:
   void
   load(const std::string& filename)
   {
-    std::ifstream ifs(filename);
+    std::ifstream ifs(filename.c_str());
     if (!ifs.is_open()) {
       throw std::runtime_error("Failed to open: " + filename);
     }
@@ -340,15 +357,24 @@ public:
   void
   trim() BRAINFUCK_NOEXCEPT
   {
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
     static const std::string kBrainfuckCharacters = "+-><.,[]";
+    bfSource.erase(
+      std::remove_if(
+        std::begin(bfSource),
+        std::end(bfSource),
+        [&](const decltype(kBrainfuckCharacters)::value_type& ch) {
+          return kBrainfuckCharacters.find_first_of(ch) == std::string::npos;
+        }),
+      std::end(bfSource));
+#else
     bfSource.erase(
       std::remove_if(
         bfSource.begin(),
         bfSource.end(),
-        [&](const decltype(kBrainfuckCharacters)::value_type& ch) {
-          return kBrainfuckCharacters.find_first_of(ch) == std::string::npos;
-        }),
+        IsBrainfuckCharacter()),
       bfSource.end());
+#endif  // __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
   }
 
   /*!
@@ -510,7 +536,6 @@ public:
                       reduceQueue.push(BfInst(BfInst::Type::kAddCMulVar, sumMove, inst2.op1));
                     }
 #endif  // BRAINFUCK_EMPLACE_AVAILABLE
-
                   } else {
                     sumMove = 0x7fffffff;
                     break;
@@ -539,7 +564,6 @@ public:
             }
             if (!isReduced) {
               ircode[static_cast<std::size_t>(loopStack.top())].op1 = static_cast<int>(ircode.size());
-
 #ifdef BRAINFUCK_EMPLACE_AVAILABLE
               ircode.emplace_back(BfInst::Type::kLoopEnd, loopStack.top());
 #else
@@ -594,7 +618,12 @@ public:
 #endif  // XBYAK32
     int labelNo = 0;
     std::stack<int> keepLabelNo;
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
     for (const auto& inst : ircode) {
+#else
+    for (std::vector<BfInst>::const_iterator itr__ = ircode.begin(); itr__ != ircode.end(); ++itr__) {
+      const BfInst& inst = *itr__;
+#endif
       switch (inst.type) {
         case BfInst::Type::kMovePointer:
           if (inst.op1 > 0) {
@@ -763,6 +792,7 @@ public:
   void
   execute(std::size_t heapSize=kDefaultHeapSize) const BRAINFUCK_NOEXCEPT
   {
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
     std::unique_ptr<unsigned char[]> heap(new unsigned char[heapSize]);
     std::fill_n(heap.get(), heapSize, 0);
     switch (state) {
@@ -776,6 +806,22 @@ public:
         execute(heap.get());
         break;
     }
+#else
+    unsigned char* heap = new unsigned char[heapSize];
+    std::fill_n(heap, heapSize, 0);
+    switch (state) {
+      case CompileType::kIR:
+        executeIR(heap);
+        break;
+      case CompileType::kJit:
+        executeJit(heap);
+        break;
+      case CompileType::kUnknown:
+        execute(heap);
+        break;
+    }
+    delete[] heap;
+#endif  // __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
   }
 
   /*!

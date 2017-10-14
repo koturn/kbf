@@ -42,11 +42,7 @@ protected:
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {
     // skip header
-    Elf64_Ehdr ehdr;
-    write(ehdr);
-    Elf64_Phdr phdr;
-    write(phdr);
-    write(phdr);
+    fill<sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr) * kNProgramHeaders>(0x00);
 
     // - - - - - The start of program body - - - - - //
     // movabs rsi, {kBssAddr}

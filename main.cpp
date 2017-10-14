@@ -1,9 +1,13 @@
 #include <cstdlib>
-#include <array>
 #include <exception>
 #include <fstream>
 #include <iostream>
-#include <unordered_map>
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
+#  include <array>
+#  include <unordered_map>
+#else
+#  include <map>
+#endif  //  __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
 
 #include "ArgumentParser.hpp"
 #include "Brainfuck.hpp"
@@ -37,6 +41,7 @@ removeSuffix(const std::string& filename) NOEXCEPT;
 int
 main(int argc, const char* argv[])
 {
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
   std::unordered_map<std::string, Brainfuck::Target> targetMap{
     {"c", Brainfuck::Target::kC},
     {"xbyakc", Brainfuck::Target::kXbyakC},
@@ -46,6 +51,16 @@ main(int argc, const char* argv[])
     {"elfx64", Brainfuck::Target::kElfX64},
     {"elfarmeabi", Brainfuck::Target::kElfArmeabi}
   };
+#else
+  std::map<std::string, Brainfuck::Target> targetMap;
+  targetMap.insert(std::make_pair("c", Brainfuck::Target::kC));
+  targetMap.insert(std::make_pair("xbyakc", Brainfuck::Target::kXbyakC));
+  targetMap.insert(std::make_pair("winx86", Brainfuck::Target::kWinX86));
+  targetMap.insert(std::make_pair("winx64", Brainfuck::Target::kWinX64));
+  targetMap.insert(std::make_pair("elfx86", Brainfuck::Target::kElfX86));
+  targetMap.insert(std::make_pair("elfx64", Brainfuck::Target::kElfX64));
+  targetMap.insert(std::make_pair("elfarmeabi", Brainfuck::Target::kElfArmeabi));
+#endif
 
   try {
     ArgumentParser ap(argv[0]);
@@ -88,7 +103,12 @@ main(int argc, const char* argv[])
       return EXIT_SUCCESS;
     }
     if (!ap.get<bool>("enable-synchronize-with-stdio")) {
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
       std::cin.tie(nullptr);
+#else
+      std::ostream* osNullptr = NULL;
+      std::cin.tie(osNullptr);
+#endif  // __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
       std::ios::sync_with_stdio(false);
     }
     std::size_t heapSize = ap.get<std::size_t>("heap-size");
@@ -139,7 +159,7 @@ main(int argc, const char* argv[])
         case Brainfuck::Target::kC:
         case Brainfuck::Target::kXbyakC:
           {
-            std::ofstream ofs(outputFile);
+            std::ofstream ofs(outputFile.c_str());
             if (!ofs.is_open()) {
               std::cerr << "Failed to open: " << outputFile << std::endl;
               return EXIT_FAILURE;
@@ -153,7 +173,7 @@ main(int argc, const char* argv[])
         case Brainfuck::Target::kElfX64:
         case Brainfuck::Target::kElfArmeabi:
           {
-            std::ofstream ofs(outputFile, std::ios::binary);
+            std::ofstream ofs(outputFile.c_str(), std::ios::binary);
             if (!ofs.is_open()) {
               std::cerr << "Failed to open: " << outputFile << std::endl;
               return EXIT_FAILURE;
