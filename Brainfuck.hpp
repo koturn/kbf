@@ -59,6 +59,11 @@
 #  define BRAINFUCK_NOEXCEPT  throw()
 #endif
 
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
+#  define BRAINFUCK_EMPLACE_AVAILABLE
+#endif
+
+
 #ifdef __GNUC__
 #  define BRAINFUCK_LIKELY(x)  __builtin_expect(!!(x), 1)
 #  define BRAINFUCK_UNLIKELY(x)  __builtin_expect(!!(x), 0)
@@ -236,15 +241,6 @@ private:
     return value;
   }
 
-  void
-  reduceIrCode(int n, const BfInst& inst) BRAINFUCK_NOEXCEPT
-  {
-    for (int i = 0; i < n; i++) {
-      ircode.pop_back();
-    }
-    ircode.emplace_back(inst);
-  }
-
   /*!
    * @brief Convert label to string
    * @param [in] labelNo  Label Number
@@ -392,8 +388,12 @@ public:
             int offset = (bfSource[pc] == '>' ? 1 : -1);
             pc++;
             offset += compressInstruction(pc, '>', '<');
-            if (offset != 0) {
-              ircode.emplace_back(BfInst(BfInst::Type::kMovePointer, offset));
+            if (BRAINFUCK_LIKELY(offset != 0)) {
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+              ircode.emplace_back(BfInst::Type::kMovePointer, offset);
+#else
+              ircode.push_back(BfInst(BfInst::Type::kMovePointer, offset));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
             }
           }
           break;
@@ -407,36 +407,67 @@ public:
               if (ircode.size() > 0 && ircode[ircode.size() - 1].type == BfInst::Type::kAssign && ircode[ircode.size() - 1].op1 == 0) {
                 ircode[ircode.size() - 1].op1 = offset;
               } else {
-                ircode.emplace_back(BfInst(BfInst::Type::kAdd, offset));
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+                ircode.emplace_back(BfInst::Type::kAdd, offset);
+#else
+                ircode.push_back(BfInst(BfInst::Type::kAdd, offset));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
               }
             }
           }
           break;
         case '.':
-          ircode.emplace_back(BfInst(BfInst::Type::kPutchar));
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+          ircode.emplace_back(BfInst::Type::kPutchar);
+#else
+          ircode.push_back(BfInst(BfInst::Type::kPutchar));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
           break;
         case ',':
-          ircode.emplace_back(BfInst(BfInst::Type::kGetchar));
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+          ircode.emplace_back(BfInst::Type::kGetchar);
+#else
+          ircode.push_back(BfInst(BfInst::Type::kGetchar));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
           break;
         case '[':
           loopStack.push(static_cast<int>(ircode.size()));
-          ircode.emplace_back(BfInst(BfInst::Type::kLoopStart));
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+          ircode.emplace_back(BfInst::Type::kLoopStart);
+#else
+          ircode.push_back(BfInst(BfInst::Type::kLoopStart));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
           break;
         case ']':
           {
             bool isReduced = false;
             std::vector<BfInst>::size_type size = ircode.size();
             if (size > 0 && ircode[size - 1].type == BfInst::Type::kLoopStart) {
-              reduceIrCode(1, BfInst(BfInst::Type::kInfLoop));
               isReduced = true;
+              ircode.resize(ircode.size() - 1);
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+              ircode.emplace_back(BfInst::Type::kInfLoop);
+#else
+              ircode.push_back(BfInst(BfInst::Type::kInfLoop));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
             } else if (size > 1 && ircode[size - 2].type == BfInst::Type::kLoopStart) {
               const BfInst& prevInst1 = ircode[size - 1];
               if (prevInst1.type == BfInst::Type::kAdd && std::abs(prevInst1.op1) == 1) {
-                reduceIrCode(2, BfInst(BfInst::Type::kAssign, 0));
                 isReduced = true;
+                ircode.resize(ircode.size() - 2);
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+                ircode.emplace_back(BfInst::Type::kAssign, 0);
+#else
+                ircode.push_back(BfInst(BfInst::Type::kAssign, 0));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
               } else if (prevInst1.type == BfInst::Type::kMovePointer) {
-                reduceIrCode(2, BfInst(BfInst::Type::kSearchZero, prevInst1.op1));
                 isReduced = true;
+                ircode.resize(ircode.size() - 2);
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+                ircode.emplace_back(BfInst::Type::kSearchZero, prevInst1.op1);
+#else
+                ircode.push_back(BfInst(BfInst::Type::kSearchZero, prevInst1.op1));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
               }
             } else if (size > 2) {
               int base = loopStack.top();
@@ -462,6 +493,15 @@ public:
                   const BfInst& inst2 = ircode[i + 1];
                   if (inst1.type == BfInst::Type::kMovePointer && inst2.type == BfInst::Type::kAdd) {
                     sumMove += inst1.op1;
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+                    if (inst2.op1 == 1) {
+                      reduceQueue.emplace(BfInst::Type::kAddVar, sumMove);
+                    } else if (inst2.op1 == -1) {
+                      reduceQueue.emplace(BfInst::Type::kSubVar, sumMove);
+                    } else {
+                      reduceQueue.emplace(BfInst::Type::kAddCMulVar, sumMove, inst2.op1);
+                    }
+#else
                     if (inst2.op1 == 1) {
                       reduceQueue.push(BfInst(BfInst::Type::kAddVar, sumMove));
                     } else if (inst2.op1 == -1) {
@@ -469,6 +509,8 @@ public:
                     } else {
                       reduceQueue.push(BfInst(BfInst::Type::kAddCMulVar, sumMove, inst2.op1));
                     }
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
+
                   } else {
                     sumMove = 0x7fffffff;
                     break;
@@ -482,16 +524,27 @@ public:
                     ircode[base + i] = reduceQueue.front();
                     reduceQueue.pop();
                   }
-                  ircode.emplace_back(BfInst(BfInst::Type::kAssign, 0));
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+                  ircode.emplace_back(BfInst::Type::kAssign, 0);
                   ircode[base] = BfInst(BfInst::Type::kIf, static_cast<int>(ircode.size()));
-                  ircode.emplace_back(BfInst(BfInst::Type::kEndIf, base));
+                  ircode.emplace_back(BfInst::Type::kEndIf, base);
+#else
+                  ircode.push_back(BfInst(BfInst::Type::kAssign, 0));
+                  ircode[base] = BfInst(BfInst::Type::kIf, static_cast<int>(ircode.size()));
+                  ircode.push_back(BfInst(BfInst::Type::kEndIf, base));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
                   isReduced = true;
                 }
               }
             }
             if (!isReduced) {
               ircode[static_cast<std::size_t>(loopStack.top())].op1 = static_cast<int>(ircode.size());
-              ircode.emplace_back(BfInst(BfInst::Type::kLoopEnd, loopStack.top()));
+
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+              ircode.emplace_back(BfInst::Type::kLoopEnd, loopStack.top());
+#else
+              ircode.push_back(BfInst(BfInst::Type::kLoopEnd, loopStack.top()));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
             }
             loopStack.pop();
           }
@@ -1088,5 +1141,9 @@ public:
   }
 };  // class Brainfuck
 
+
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+#  undef BRAINFUCK_EMPLACE_AVAILABLE
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
 
 #endif  // BRAINFUCK_HPP

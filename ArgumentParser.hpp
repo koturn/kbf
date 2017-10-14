@@ -28,6 +28,10 @@
 #  define ARGUMENT_PARSER_NOEXCEPT  throw()
 #endif
 
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1600
+#  define ARGUMENT_PARSER_EMPLACE_AVAILABLE
+#endif
+
 
 /*!
  * @class ArgumentParser
@@ -237,11 +241,11 @@ private:
   {
     std::vector<std::string> args;
     for (int i = 1; i < argc; i++) {
-#if __cplusplus >= 201103L
+#ifdef ARGUMENT_PARSER_EMPLACE_AVAILABLE
       args.emplace_back(argv[i]);
 #else
       args.push_back(argv[i]);
-#endif  // __cplusplus >= 201103L
+#endif  // ARGUMENT_PARSER_EMPLACE_AVAILABLE
     }
     return args;
   }
@@ -494,11 +498,11 @@ public:
     const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? kStringFalse : defaultValue);
     shortOptMap[shortOptName] = options.size();
     longOptMap[longOptName] = options.size();
-#if __cplusplus >= 201103L
-    options.emplace_back(OptionItem(shortOptName, longOptName, optType, description_, metavar, dv));
+#ifdef ARGUMENT_PARSER_EMPLACE_AVAILABLE
+    options.emplace_back(shortOptName, longOptName, optType, description_, metavar, dv);
 #else
     options.push_back(OptionItem(shortOptName, longOptName, optType, description_, metavar, dv));
-#endif  // __cplusplus >= 201103L
+#endif  // ARGUMENT_PARSER_EMPLACE_AVAILABLE
   }
 
   /*!
@@ -519,11 +523,11 @@ public:
   {
     const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? kStringFalse : defaultValue);
     shortOptMap[shortOptName] = options.size();
-#if __cplusplus >= 201103L
-    options.emplace_back(OptionItem(shortOptName, "", optType, description_, metavar, dv));
+#ifdef ARGUMENT_PARSER_EMPLACE_AVAILABLE
+    options.emplace_back(shortOptName, "", optType, description_, metavar, dv);
 #else
     options.push_back(OptionItem(shortOptName, "", optType, description_, metavar, dv));
-#endif  // __cplusplus >= 201103L
+#endif  // ARGUMENT_PARSER_EMPLACE_AVAILABLE
   }
 
   /*!
@@ -544,11 +548,11 @@ public:
   {
     const std::string& dv = ((optType == OptionType::kNoArgument && defaultValue.empty()) ? kStringFalse : defaultValue);
     longOptMap[longOptName] = options.size();
-#if __cplusplus >= 201103L
-    options.emplace_back(OptionItem(-1, longOptName, optType, description_, metavar, dv));
+#ifdef ARGUMENT_PARSER_EMPLACE_AVAILABLE
+    options.emplace_back(-1, longOptName, optType, description_, metavar, dv);
 #else
     options.push_back(OptionItem(-1, longOptName, optType, description_, metavar, dv));
-#endif  // __cplusplus >= 201103L
+#endif  // ARGUMENT_PARSER_EMPLACE_AVAILABLE
   }
 
   /*!
@@ -673,11 +677,11 @@ public:
       if (args[i].find("--") == 0) {
         if (args[i].length() == 2) {
           for (i++; i < args.size(); i++) {
-#if __cplusplus >= 201103L
+#ifdef ARGUMENT_PARSER_EMPLACE_AVAILABLE
             arguments.emplace_back(args[i]);
 #else
             arguments.push_back(args[i]);
-#endif  // __cplusplus >= 201103L
+#endif  // ARGUMENT_PARSER_EMPLACE_AVAILABLE
           }
           return;
         }
@@ -685,11 +689,13 @@ public:
       } else if (args[i].find("-") == 0 && args[i].length() > 1) {
         i = parseShortOption(args, i);
       } else {
-#if __cplusplus >= 201103L
+#ifdef ARGUMENT_PARSER_EMPLACE_AVAILABLE
         arguments.emplace_back(args[i]);
 #else
         arguments.push_back(args[i]);
-#endif  // __cplusplus >= 201103L
+#endif  // ARGUMENT_PARSER_EMPLACE_AVAILABLE
+
+
       }
     }
   }
@@ -952,5 +958,9 @@ const std::string ArgumentParser::kDefaultMetavar = "ARG";
 const std::string ArgumentParser::kStringTrue = "1";
 const std::string ArgumentParser::kStringFalse = "0";
 
+
+#ifdef ARGUMENT_PARSER_EMPLACE_AVAILABLE
+#  undef ARGUMENT_PARSER_EMPLACE_AVAILABLE
+#endif  // ARGUMENT_PARSER_EMPLACE_AVAILABLE
 
 #endif  // ARGUMENT_PARSER_HPP
