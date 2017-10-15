@@ -42,7 +42,7 @@ protected:
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {
     // skip header
-    fill<sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders>(0x00);
+    fill<sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr) * kNProgramHeaders, u8>(0x00);
 
     // - - - - - The start of program body - - - - - //
     // mov ecx, {kBssAddr}
