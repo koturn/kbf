@@ -258,6 +258,27 @@ private:
     return value;
   }
 
+
+  /*!
+   * @brief Get stream size
+   * @param is [in]  Input stream
+   * @return  Size of stream from current position. if the stream is not
+   * seekable, return -1.
+   */
+  static std::streamoff
+  getStreamSize(std::istream& is) BRAINFUCK_NOEXCEPT
+  {
+    std::istream::pos_type curPos = is.tellg();
+    if (curPos == static_cast<std::istream::pos_type>(-1)) {
+      return -1;
+    }
+    is.seekg(0, std::istream::end);
+    std::istream::pos_type endPos = is.tellg();
+    is.seekg(curPos);
+    return endPos - curPos;
+  }
+
+
   /*!
    * @brief Convert label to string
    * @param [in] labelNo  Label Number
@@ -265,7 +286,7 @@ private:
    * @return Label in string format
    */
   inline static std::string
-  toXbyakLabelString(int labelNo, XbyakDirection dir)
+  toXbyakLabelString(int labelNo, XbyakDirection dir) BRAINFUCK_NOEXCEPT
   {
     return Xbyak::Label::toStr(labelNo) + (dir == XbyakDirection::B ? 'B' : 'F');
   }
@@ -336,8 +357,14 @@ public:
   void
   load(std::istream& is) BRAINFUCK_NOEXCEPT
   {
-    bfSource = std::string((std::istreambuf_iterator<char>(is)), std::istreambuf_iterator<char>());
     state = CompileType::kUnknown;
+    std::streamoff streamSize = getStreamSize(is);
+    if (streamSize == -1) {
+      bfSource = std::string((std::istreambuf_iterator<char>(is)), std::istreambuf_iterator<char>());
+    } else {
+      bfSource.resize(streamSize);
+      is.read(&bfSource[0], bfSource.length());
+    }
   }
 
   /*!
@@ -1071,43 +1098,43 @@ public:
     const Xbyak::uint8* code = cg.getCode();
 
     os << "#include <stdio.h>\n"
-                 "#include <stdlib.h>\n"
+          "#include <stdlib.h>\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-                 "#ifndef WIN32_LEAN_AND_MEAN\n"
-                 "#  define WIN32_LEAN_AND_MEAN\n"
-                 "#  define WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
-                 "#endif\n"
-                 "#include <windows.h>\n"
-                 "#ifdef WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
-                 "#  undef WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
-                 "#  undef WIN32_LEAN_AND_MEAN\n"
-                 "#endif\n"
+          "#ifndef WIN32_LEAN_AND_MEAN\n"
+          "#  define WIN32_LEAN_AND_MEAN\n"
+          "#  define WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+          "#endif\n"
+          "#include <windows.h>\n"
+          "#ifdef WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+          "#  undef WIN32_LEAN_AND_MEAN_IS_NOT_DEFINED\n"
+          "#  undef WIN32_LEAN_AND_MEAN\n"
+          "#endif\n"
 #elif defined(__linux__)
-                 "#include <unistd.h>\n"
-                 "#include <sys/mman.h>\n"
+          "#include <unistd.h>\n"
+          "#include <sys/mman.h>\n"
 #endif  // defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-                 "\n"
+          "\n"
 #if defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-                 "#define GNUC_PREREQ(major, minor) \\\n"
-                 "  (defined(__GNUC__) && (__GNUC__ > (major) || __GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))\n\n"
-                 "#if defined(_MSC_VER)\n"
-                 "#  pragma warning(push)\n"
-                 "#  pragma warning(disable: 4055)\n"
-                 "#elif GNUC_PREREQ(4, 6)\n"
-                 "#  pragma GCC diagnostic push\n"
-                 "#  pragma GCC diagnostic ignored \"-Wcast-qual\"\n"
-                 "#  pragma GCC diagnostic ignored \"-Wpedantic\"\n"
+          "#define GNUC_PREREQ(major, minor) \\\n"
+          "  (defined(__GNUC__) && (__GNUC__ > (major) || __GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))\n\n"
+          "#if defined(_MSC_VER)\n"
+          "#  pragma warning(push)\n"
+          "#  pragma warning(disable: 4055)\n"
+          "#elif GNUC_PREREQ(4, 6)\n"
+          "#  pragma GCC diagnostic push\n"
+          "#  pragma GCC diagnostic ignored \"-Wcast-qual\"\n"
+          "#  pragma GCC diagnostic ignored \"-Wpedantic\"\n"
 #elif defined(__linux__)
-                 "#if __GNUC_PREREQ(4, 6)\n"
-                 "#  pragma GCC diagnostic push\n"
-                 "#  pragma GCC diagnostic ignored \"-Wcast-qual\"\n"
-                 "#  pragma GCC diagnostic ignored \"-Wpedantic\"\n"
+          "#if __GNUC_PREREQ(4, 6)\n"
+          "#  pragma GCC diagnostic push\n"
+          "#  pragma GCC diagnostic ignored \"-Wcast-qual\"\n"
+          "#  pragma GCC diagnostic ignored \"-Wpedantic\"\n"
 #endif  // defined(_WIN32) || defined(_WIN64) || (defined(__CYGWIN__) && defined(__x86_64__))
-                 "#endif\n\n"
-                 "static unsigned char stack[65536];\n"
-                 "/* code size: " << size << " bytes */\n"
-                 "static const unsigned char code[] = {\n"
-              << std::hex << " ";
+          "#endif\n\n"
+          "static unsigned char stack[65536];\n"
+          "/* code size: " << size << " bytes */\n"
+          "static const unsigned char code[] = {\n"
+       << std::hex << " ";
     for (std::size_t i = 0; i < size; i++) {
       os << " 0x" << std::setfill('0') << std::setw(2) << static_cast<unsigned int>(code[i]) << ",";
       if (i % 16 == 15) {
