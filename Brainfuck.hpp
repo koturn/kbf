@@ -456,7 +456,7 @@ public:
             int offset = (bfSource[pc] == '+' ? 1 : -1);
             pc++;
             offset += compressInstruction(pc, '+', '-');
-            if (offset != 0) {
+            if (BRAINFUCK_LIKELY(offset != 0)) {
               if (ircode.size() > 0 && ircode[ircode.size() - 1].type == BfInst::Type::kAssign && ircode[ircode.size() - 1].op1 == 0) {
                 ircode[ircode.size() - 1].op1 = offset;
               } else {
@@ -569,9 +569,7 @@ public:
                   }
                 }
                 if (sumMove + rollbackMove == 0) {
-                  for (std::queue<BfInst>::size_type i = 0, im = reduceQueue.size() + 2; i < im; i++) {
-                    ircode.pop_back();
-                  }
+                  ircode.resize(ircode.size() - reduceQueue.size() - 2);
                   for (int i = 1; !reduceQueue.empty(); i++) {
                     ircode[base + i] = reduceQueue.front();
                     reduceQueue.pop();
@@ -1137,7 +1135,7 @@ public:
        << std::hex << " ";
     for (std::size_t i = 0; i < size; i++) {
       os << " 0x" << std::setfill('0') << std::setw(2) << static_cast<unsigned int>(code[i]) << ",";
-      if (i % 16 == 15) {
+      if (BRAINFUCK_UNLIKELY(i % 16 == 15)) {
         os << "\n ";
       }
     }
