@@ -433,6 +433,12 @@ protected:
     write(static_cast<u8>(-2));
     emitEndIfImpl();
   }
+
+  void
+  emitBreakPointImpl() CODE_GENERATOR_NOEXCEPT
+  {
+    write<u8>(0xcc);
+  }
 };  // class GeneratorElfX64
 
 

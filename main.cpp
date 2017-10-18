@@ -60,7 +60,7 @@ main(int argc, const char* argv[])
   targetMap.insert(std::make_pair("elfx86", Brainfuck::Target::kElfX86));
   targetMap.insert(std::make_pair("elfx64", Brainfuck::Target::kElfX64));
   targetMap.insert(std::make_pair("elfarmeabi", Brainfuck::Target::kElfArmeabi));
-#endif
+#endif  // __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
 
   try {
     ArgumentParser ap(argv[0]);
@@ -92,6 +92,7 @@ main(int argc, const char* argv[])
     ap.add("heap-size", ArgumentParser::OptionType::kRequiredArgument,
         "Specify heap memory size" + ap.getNewlineDescription()
         + "Default value: 65536", "HEAP_SIZE", 65536);
+    ap.add("top-break-point", "Add break point to the top of code");
     ap.parse(argc, argv);
 
     if (ap.get<bool>("help")) {
@@ -138,8 +139,11 @@ main(int argc, const char* argv[])
       std::cout << bf.getSource() << std::endl;
       return EXIT_SUCCESS;
     }
+
+    bool hasTopBreakPoint = ap.get<bool>("top-break-point");
+
     if (ap.get<bool>("dump-ir")) {
-      bf.compile();
+      bf.compile(Brainfuck::CompileType::kIR, hasTopBreakPoint);
       bf.dumpIR();
       return EXIT_SUCCESS;
     }
@@ -149,7 +153,7 @@ main(int argc, const char* argv[])
         std::cerr << "Option -t, --target: Invalid value: \"" << target << "\" is specified" << std::endl;
         return EXIT_FAILURE;
       }
-      bf.compile(Brainfuck::CompileType::kJit);
+      bf.compile(Brainfuck::CompileType::kJit, hasTopBreakPoint);
       Brainfuck::Target targetType = targetMap[target];
       std::string outputFile = ap.get("output");
       if (outputFile == "") {
@@ -188,9 +192,9 @@ main(int argc, const char* argv[])
     }
 
     if (optLevel == 1) {
-      bf.compile(Brainfuck::CompileType::kIR);
+      bf.compile(Brainfuck::CompileType::kIR, hasTopBreakPoint);
     } else if (optLevel > 1) {
-      bf.compile(Brainfuck::CompileType::kJit);
+      bf.compile(Brainfuck::CompileType::kJit, hasTopBreakPoint);
     }
     bf.execute(heapSize);
   } catch (const std::exception& e) {

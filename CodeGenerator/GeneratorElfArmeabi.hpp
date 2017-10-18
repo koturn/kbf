@@ -435,6 +435,13 @@ protected:
     emitEndIfImpl();
   }
 #endif
+
+  void
+  emitBreakPointImpl() CODE_GENERATOR_NOEXCEPT
+  {
+    // .inst 0xe7f001f0
+    write(0xe7f001f0);
+  }
 };  // class GeneratorElfArmeabi
 
 

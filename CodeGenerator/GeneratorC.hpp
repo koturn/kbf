@@ -28,10 +28,35 @@ protected:
   void
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {
-    oStream << "#include <stdio.h>\n"
+    oStream << "#include <signal.h>\n"
+               "#include <stdio.h>\n"
                "#include <stdlib.h>\n"
                "#include <string.h>\n\n"
                "#define MEMORY_SIZE 65536\n\n"
+               "#ifdef _MSC_VER\n"
+               "#  define debugbreak __debugbreak\n"
+               "#else\n"
+               "__attribute__((gnu_inline, always_inline))\n"
+               "__inline__ static void\n"
+               "debugbreak(void)\n"
+               "{\n"
+               "#  if defined(__i386__) || defined(__x86_64__)\n"
+               "  __asm__ volatile(\"int $0x03\");\n"
+               "#  elif defined(__thumb__)\n"
+               "  __asm__ volatile(\".inst 0xde01\");\n"
+               "#  elif defined(__arm__) && !defined(__thumb__)\n"
+               "  __asm__ volatile(\".inst 0xe7f001f0\");\n"
+               "#  elif defined(__aarch64__) && defined(__APPLE__)\n"
+               "  __builtin_trap();\n"
+               "#  elif defined(__aarch64__)\n"
+               "  __asm__ volatile(\".inst 0xd4200000\");\n"
+               "#  elif defined(_WIN32)\n"
+               "  __builtin_trap();\n"
+               "#  else\n"
+               "  raise(SIGTRAP);\n"
+               "#  endif\n"
+               "}\n"
+               "#endif\n\n"
                "int\n"
                "main(void)\n"
                "{\n"
@@ -203,7 +228,13 @@ protected:
     emitIndent();
     oStream << "}\n";
   }
-};  // class GeneratorC
 
+  void
+  emitBreakPointImpl() CODE_GENERATOR_NOEXCEPT
+  {
+    emitIndent();
+    oStream << "debugbreak();\n";
+  }
+};  // class GeneratorC
 
 #endif  // GENERATOR_C_HPP

@@ -409,14 +409,14 @@ public:
    * @param [in] ct  Compilation type
    */
   void
-  compile(CompileType ct=CompileType::kIR) BRAINFUCK_NOEXCEPT
+  compile(CompileType ct=CompileType::kIR, bool hasTopBreakPoint=false) BRAINFUCK_NOEXCEPT
   {
     switch (ct) {
       case CompileType::kIR:
-        compileToIR();
+        compileToIR(hasTopBreakPoint);
         break;
       case CompileType::kJit:
-        compileToIR();
+        compileToIR(hasTopBreakPoint);
         compileToNative();
         break;
       default:
@@ -429,10 +429,17 @@ public:
    * @brief Compile brainfuck source code to IR code
    */
   void
-  compileToIR() BRAINFUCK_NOEXCEPT
+  compileToIR(bool hasTopBreakPoint=false) BRAINFUCK_NOEXCEPT
   {
     std::stack<int> loopStack;
     ircode.clear();
+    if (hasTopBreakPoint) {
+#ifdef BRAINFUCK_EMPLACE_AVAILABLE
+      ircode.emplace_back(BfInst::Type::kBreakPoint);
+#else
+      ircode.push_back(BfInst(BfInst::Type::kBreakPoint));
+#endif  // BRAINFUCK_EMPLACE_AVAILABLE
+    }
     for (std::string::size_type pc = 0; pc < bfSource.size(); pc++) {
       switch (bfSource[pc]) {
         case '>':
@@ -781,6 +788,9 @@ public:
           cg.L(toXbyakLabelString(labelNo, XbyakDirection::F));
           labelNo++;
           break;
+        case BfInst::Type::kBreakPoint:
+          cg.db(0xcc);
+          break;
         default:
           assert(false);
       }
@@ -982,6 +992,24 @@ public:
             for (;;);
           }
           break;
+        case BfInst::Type::kBreakPoint:
+#if defined(MSC_VER)
+          __debugbreak();
+#elif defined(__i386__) || defined(__x86_64__)
+          __asm__ volatile("int $0x03");
+#elif defined(__thumb__)
+          __asm__ volatile(".inst 0xde01");
+#elif defined(__arm__) && !defined(__thumb__)
+          __asm__ volatile(".inst 0xe7f001f0");
+#elif defined(__aarch64__) && defined(__APPLE__)
+          __builtin_trap();
+#elif defined(__aarch64__)
+          __asm__ volatile(".inst 0xd4200000");
+#elif defined(_WIN32)
+          __builtin_trap();
+#else
+          std::raise(SIGTRAP);
+#endif  // defined(MSC_VER)
         case BfInst::Type::kUnknown:
           break;
       }
@@ -1047,6 +1075,9 @@ public:
           break;
         case BfInst::Type::kInfLoop:
           std::cout << "kInfLoop" << std::endl;
+          break;
+        case BfInst::Type::kBreakPoint:
+          std::cout << "kBreakPoint" << std::endl;
           break;
         case BfInst::Type::kUnknown:
           std::cout << "kUnknown" << std::endl;

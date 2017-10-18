@@ -97,6 +97,9 @@ public:
         case BfInst::Type::kInfLoop:
           emitInfLoop();
           break;
+        case BfInst::Type::kBreakPoint:
+          emitBreakPoint();
+          break;
         default:
           assert(false);
       }
@@ -200,6 +203,12 @@ private:
   emitInfLoop() CODE_GENERATOR_NOEXCEPT
   {
     static_cast<T*>(this)->emitInfLoopImpl();
+  }
+
+  void
+  emitBreakPoint() CODE_GENERATOR_NOEXCEPT
+  {
+    static_cast<T*>(this)->emitBreakPointImpl();
   }
 
   // - - - Default implementations - - -

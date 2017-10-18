@@ -10,7 +10,8 @@
 /*!
  * @brief One brainfuck IR instruction
  */
-struct BfInst {
+struct BfInst
+{
 //! Brainfuck instructions
 #define BF_INST_INSTRUCTIONS \
   kMovePointer, kAdd, \
@@ -19,9 +20,10 @@ struct BfInst {
   kAssign, kSearchZero, \
   kAddVar, kSubVar, kAddCMulVar, \
   kInfLoop, \
+  kBreakPoint, \
   kUnknown
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
   /*!
    * @brief Instruction type
    */
