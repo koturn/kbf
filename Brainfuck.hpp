@@ -278,17 +278,34 @@ private:
     return endPos - curPos;
   }
 
-
   /*!
    * @brief Convert label to string
    * @param [in] labelNo  Label Number
    * @param [in] dir      Direction (Backword or Forward)
    * @return Label in string format
    */
-  inline static std::string
+  static inline std::string
   toXbyakLabelString(int labelNo, XbyakDirection dir) BRAINFUCK_NOEXCEPT
   {
     return Xbyak::Label::toStr(labelNo) + (dir == XbyakDirection::B ? 'B' : 'F');
+  }
+
+  template<
+    int kRW,
+    int kLocality
+  >
+#ifdef __GNUC__
+  __attribute__((const))
+#endif  // __GNUC__
+  static inline void
+  prefetch(const void* addr, std::size_t size=sizeof(void*) * 8, std::size_t stride=sizeof(void*) * 8)
+  {
+#ifdef __GNUC__
+    for (const unsigned char* p = static_cast<const unsigned char*>(addr), *end = static_cast<const unsigned char*>(addr) + size; p < end; p += stride)
+    {
+      __builtin_prefetch(p, kRW, kLocality);
+    }
+#endif  // __GNUC__
   }
 
 
@@ -830,6 +847,7 @@ public:
 #if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
     std::unique_ptr<unsigned char[]> heap(new unsigned char[heapSize]);
     std::fill_n(heap.get(), heapSize, 0);
+    prefetch<1, 0>(heap.get(), heapSize);
     switch (state) {
       case CompileType::kIR:
         executeIR(heap.get());
@@ -844,6 +862,7 @@ public:
 #else
     unsigned char* heap = new unsigned char[heapSize];
     std::fill_n(heap, heapSize, 0);
+    prefetch<1, 0>(heap, heapSize);
     switch (state) {
       case CompileType::kIR:
         executeIR(heap);
@@ -867,6 +886,7 @@ public:
   execute(unsigned char* heap) const BRAINFUCK_NOEXCEPT
   {
     std::size_t hp = 0;
+    prefetch<0, 0>(&bfSource[0], bfSource.length() + 1);
     for (std::string::size_type pc = 0; pc < bfSource.size(); pc++) {
       switch (bfSource[pc]) {
         case '+':
@@ -934,6 +954,7 @@ public:
   executeIR(unsigned char* heap) const BRAINFUCK_NOEXCEPT
   {
     std::size_t hp = 0;
+    prefetch<0, 0>(&ircode[0], sizeof(BfInst) * ircode.size());
     for (std::vector<BfInst>::size_type pc = 0, size = ircode.size(); pc < size; pc++) {
       switch (ircode[pc].type) {
         case BfInst::Type::kMovePointer:
