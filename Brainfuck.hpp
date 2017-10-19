@@ -1014,7 +1014,7 @@ public:
           }
           break;
         case BfInst::Type::kBreakPoint:
-#if defined(MSC_VER)
+#if defined(_MSC_VER)
           __debugbreak();
 #elif defined(__i386__) || defined(__x86_64__)
           __asm__ volatile("int $0x03");
