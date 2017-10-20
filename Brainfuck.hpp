@@ -847,7 +847,7 @@ public:
 #if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1700
     std::unique_ptr<unsigned char[]> heap(new unsigned char[heapSize]);
     std::fill_n(heap.get(), heapSize, 0);
-    prefetch<1, 0>(heap.get(), heapSize);
+    prefetch<1, 3>(heap.get(), heapSize);
     switch (state) {
       case CompileType::kIR:
         executeIR(heap.get());
@@ -862,7 +862,7 @@ public:
 #else
     unsigned char* heap = new unsigned char[heapSize];
     std::fill_n(heap, heapSize, 0);
-    prefetch<1, 0>(heap, heapSize);
+    prefetch<1, 3>(heap, heapSize);
     switch (state) {
       case CompileType::kIR:
         executeIR(heap);
@@ -886,7 +886,7 @@ public:
   execute(unsigned char* heap) const BRAINFUCK_NOEXCEPT
   {
     std::size_t hp = 0;
-    prefetch<0, 0>(&bfSource[0], bfSource.length() + 1);
+    prefetch<0, 3>(&bfSource[0], bfSource.length() + 1);
     for (std::string::size_type pc = 0; pc < bfSource.size(); pc++) {
       switch (bfSource[pc]) {
         case '+':
@@ -954,7 +954,7 @@ public:
   executeIR(unsigned char* heap) const BRAINFUCK_NOEXCEPT
   {
     std::size_t hp = 0;
-    prefetch<0, 0>(&ircode[0], sizeof(BfInst) * ircode.size());
+    prefetch<0, 3>(&ircode[0], sizeof(BfInst) * ircode.size());
     for (std::vector<BfInst>::size_type pc = 0, size = ircode.size(); pc < size; pc++) {
       switch (ircode[pc].type) {
         case BfInst::Type::kMovePointer:
