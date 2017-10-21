@@ -173,18 +173,18 @@ protected:
     phdr.p_paddr = kBaseAddr;
     phdr.p_filesz = static_cast<Elf32_Word>(kHeaderSize + sizeof(kShStrTbl) + kFooterSize + codeSize);
     phdr.p_memsz = static_cast<Elf32_Word>(kHeaderSize + sizeof(kShStrTbl) + kFooterSize + codeSize);
-    phdr.p_align = 0x00000100;
+    phdr.p_align = 0x00001000;
     write(phdr);
 
     // Program header for .bss (56 bytes)
     phdr.p_type = PT_LOAD;
     phdr.p_flags = PF_R | PF_W;
-    phdr.p_offset = 0x00001000;
+    phdr.p_offset = 0x00000000;
     phdr.p_vaddr = kBssAddr;
     phdr.p_paddr = kBssAddr;
     phdr.p_filesz = 0x00000000;
     phdr.p_memsz = 0x00010000;
-    phdr.p_align = 0x00200000;
+    phdr.p_align = 0x00001000;
     write(phdr);
 
     oStream.seekp(0, std::ios_base::end);
