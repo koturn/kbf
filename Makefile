@@ -96,7 +96,7 @@ CTAGSFLAGS    := -R --languages=c,c++ $(addprefix -I,NOEXCEPT ARGUMENT_PARSER_NO
 DOXYGEN       := doxygen
 DOXYFILE      := Doxyfile
 DOXYGENDISTS  := doxygen_sqlite3.db html/ latex/
-TARGET        := brainfuck
+TARGET        := kbf
 SRCS          := $(wildcard *.cpp)
 VERSION_H     := version.h
 OBJS          := $(foreach PAT,%.cpp %.cxx %.cc,$(patsubst $(PAT),%.o,$(filter $(PAT),$(SRCS))))

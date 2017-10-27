@@ -23,7 +23,7 @@ else
     endif
 endif
 
-BRAINFUCK := $(addsuffix $(BIN_SUFFIX),../brainfuck)
+BRAINFUCK := $(addsuffix $(BIN_SUFFIX),../kbf)
 TESTS := $(basename $(sort $(wildcard *.b)))
 OPT_LEVELS := 0 1 2
 INPUTS_DIR := inputs

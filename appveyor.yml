@@ -10,5 +10,5 @@ build_script:
 test_script:
 - cmd: nmake /nologo /f msvc.mk test
 artifacts:
-- path: brainfuck.exe
+- path: kbf.exe
   name: (x64) Brainfuck interpreter/compiler

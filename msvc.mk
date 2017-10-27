@@ -42,7 +42,7 @@ DOXYFILE     = Doxyfile
 DOXYGENDISTS = doxygen_sqlite3.db html\\ latex\\
 GIT_HEAD_PATH = .git/HEAD
 
-TARGET    = brainfuck.exe
+TARGET    = kbf.exe
 MAIN_SRC  = main.cpp
 MAIN_OBJ  = $(MAIN_SRC:.cpp=.obj)
 VERSION_H = version.h

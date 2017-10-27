@@ -1,4 +1,4 @@
-BRAINFUCK = ..\brainfuck.exe
+BRAINFUCK = ..\kbf.exe
 INPUTS_DIR = inputs
 OUTPUTS_DIR = outputs
 EXPECTS_DIR = expects
