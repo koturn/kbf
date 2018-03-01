@@ -99,10 +99,10 @@ protected:
     idh.e_cs = 0x0000;
     idh.e_lfarlc = 0x0040;
     idh.e_ovno = 0x001a;
-    std::fill_n(idh.e_res, sizeof(idh.e_res), 0x0000);
+    std::fill_n(idh.e_res, lengthof(idh.e_res), 0x0000);
     idh.e_oemid = 0x0000;
     idh.e_oeminfo = 0x0000;
-    std::fill_n(idh.e_res2, sizeof(idh.e_res2), 0x0000);
+    std::fill_n(idh.e_res2, lengthof(idh.e_res2), 0x0000);
     idh.e_lfanew = 0x00000080;
     write(idh);
 

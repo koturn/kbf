@@ -54,6 +54,13 @@ protected:
     return alignment * ((size + alignment - 1) / alignment);
   }
 
+  template<typename U, std::size_t kSize>
+  static std::size_t
+  lengthof(const U(&)[kSize]) CODE_GENERATOR_NOEXCEPT
+  {
+    return kSize;
+  }
+
   //! Loop stack
   std::stack<std::ostream::pos_type> loopStack;
 
