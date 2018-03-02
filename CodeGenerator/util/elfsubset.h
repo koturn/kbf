@@ -303,10 +303,9 @@
 
 
 // <elf32.h>
-#if defined(__linux__)
+#if defined(__linux__) || defined(__CYGWIN__)
 #  include <elf.h>
-#elif defined(__CYGWIN__)
-#  include <sys/elf32.h>
+// #  include <sys/elf32.h>
 #  ifndef ELFOSABI_ARM_EABI
 #    define ELFOSABI_ARM_AEABI 64
 #  endif
@@ -370,16 +369,15 @@ typedef struct {
 } Elf32_Phdr;
 
 
-#endif  // defined(__linux__)
+#endif  // defined(__linux__) || defined(__CYGWIN__)
 
 
 
 
 // <elf64.h>
-#if defined(__linux__)
+#if defined(__linux__) || defined(__CYGWIN__)
 #  include <elf.h>
-#elif defined(__CYGWIN__)
-#  include <sys/elf64.h>
+// #  include <sys/elf64.h>
 #else
 /*
  * ELF definitions common to all 64-bit architectures.
@@ -439,7 +437,7 @@ typedef struct {
   Elf64_Xword p_memsz;   /* Size of contents in memory. */
   Elf64_Xword p_align;   /* Alignment in memory and file. */
 } Elf64_Phdr;
-#endif  // defined(__linux__)
+#endif  // defined(__linux__) || defined(__CYGWIN__)
 
 
 #endif  // ELFSUBSET_H
