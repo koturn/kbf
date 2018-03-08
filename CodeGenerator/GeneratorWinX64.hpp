@@ -32,7 +32,7 @@ public:
     BinaryGenerator<GeneratorWinX64>(oStream)
   {}
 
-protected:
+private:
   void
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {

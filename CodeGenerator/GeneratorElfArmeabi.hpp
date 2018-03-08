@@ -37,7 +37,7 @@ public:
     BinaryGenerator<GeneratorElfArmeabi>(oStream)
   {}
 
-protected:
+private:
   void
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {

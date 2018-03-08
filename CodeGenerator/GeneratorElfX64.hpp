@@ -37,7 +37,7 @@ public:
     BinaryGenerator<GeneratorElfX64>(oStream)
   {}
 
-protected:
+private:
   void
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {
