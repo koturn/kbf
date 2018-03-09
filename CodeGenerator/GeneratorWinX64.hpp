@@ -133,10 +133,12 @@ private:
 
     // Write image file header
     write<DWORD>(IMAGE_NT_SIGNATURE);
+
+    const auto ts = static_cast<DWORD>(std::time(static_cast<std::time_t*>(NULL)));
     IMAGE_FILE_HEADER ifh;
     ifh.Machine = IMAGE_FILE_MACHINE_AMD64;  // 0x8664
     ifh.NumberOfSections = 3;
-    ifh.TimeDateStamp = 0;
+    ifh.TimeDateStamp = ts;
     ifh.PointerToSymbolTable = 0;
     ifh.NumberOfSymbols = 0;
     ifh.SizeOfOptionalHeader = sizeof(IMAGE_OPTIONAL_HEADER64);
@@ -151,7 +153,7 @@ private:
     ioh.Magic = IMAGE_NT_OPTIONAL_HDR64_MAGIC;
     ioh.MajorLinkerVersion = 14;
     ioh.MinorLinkerVersion = 0;
-    ioh.SizeOfCode = codeSizeWithPadding;
+    ioh.SizeOfCode = codeSize;
     ioh.SizeOfInitializedData = 0;
     ioh.SizeOfUninitializedData = 65536;
     ioh.AddressOfEntryPoint = 0x1000;
@@ -186,16 +188,15 @@ private:
     // .text section
     IMAGE_SECTION_HEADER ishText;
     std::memcpy(reinterpret_cast<void*>(ishText.Name), ".text\0\0", sizeof(ishText.Name));
-    ishText.Misc.VirtualSize = codeSizeWithPadding;
+    ishText.Misc.VirtualSize = codeSize;
     ishText.VirtualAddress = ioh.BaseOfCode;
-    ishText.SizeOfRawData = codeSizeWithPadding;
+    ishText.SizeOfRawData = codeSize;
     ishText.PointerToRawData = kPeHeaderSizeWithPadding + kIdataSizeWithPadding;
     ishText.PointerToRelocations = 0x00000000;
     ishText.PointerToLinenumbers = 0x00000000;
     ishText.NumberOfRelocations = 0x0000;
     ishText.NumberOfLinenumbers = 0x0000;
     ishText.Characteristics = IMAGE_SCN_CNT_CODE
-      | IMAGE_SCN_CNT_INITIALIZED_DATA
       | IMAGE_SCN_ALIGN_16BYTES
       | IMAGE_SCN_MEM_EXECUTE
       | IMAGE_SCN_MEM_READ;
@@ -214,8 +215,7 @@ private:
     ishIdata.NumberOfLinenumbers = 0x00000;
     ishIdata.Characteristics = IMAGE_SCN_CNT_INITIALIZED_DATA
       | IMAGE_SCN_ALIGN_4BYTES
-      | IMAGE_SCN_MEM_READ
-      | IMAGE_SCN_MEM_WRITE;
+      | IMAGE_SCN_MEM_READ;
     write(ishIdata);
 
     // .bss section
@@ -246,12 +246,12 @@ private:
     IMAGE_THUNK_DATA64 itdInts[4];
 
     iids[0].OriginalFirstThunk = static_cast<DWORD>(ishIdata.VirtualAddress + sizeof(iids));  // int
-    iids[0].TimeDateStamp = 0x00000000;
+    iids[0].TimeDateStamp = ts;
     iids[0].ForwarderChain = 0x00000000;
     iids[0].Name = static_cast<DWORD>(iids[0].OriginalFirstThunk + sizeof(itdInts));  // msvcrt.dll
     iids[0].FirstThunk = iids[0].Name + 16;  // iat
     iids[1].Characteristics = 0x00000000;
-    iids[1].TimeDateStamp = 0x00000000;
+    iids[1].TimeDateStamp = ts;
     iids[1].ForwarderChain = 0x00000000;
     iids[1].Name = 0x00000000;
     iids[1].FirstThunk = 0x00000000;
