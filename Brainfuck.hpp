@@ -426,7 +426,7 @@ public:
    * @param [in] ct  Compilation type
    */
   void
-  compile(CompileType ct=CompileType::kIR, bool hasTopBreakPoint=false) BRAINFUCK_NOEXCEPT
+  compile(CompileType ct=CompileType::kIR, bool hasTopBreakPoint=false)
   {
     switch (ct) {
       case CompileType::kIR:
@@ -446,7 +446,7 @@ public:
    * @brief Compile brainfuck source code to IR code
    */
   void
-  compileToIR(bool hasTopBreakPoint=false) BRAINFUCK_NOEXCEPT
+  compileToIR(bool hasTopBreakPoint=false)
   {
     std::stack<int> loopStack;
     ircode.clear();
@@ -517,8 +517,11 @@ public:
           break;
         case ']':
           {
-            bool isReduced = false;
             std::vector<BfInst>::size_type size = ircode.size();
+            if (size == 0) {
+              throw std::runtime_error("Unmatched ']' is detected");
+            }
+            bool isReduced = false;
             if (size > 0 && ircode[size - 1].type == BfInst::Type::kLoopStart) {
               isReduced = true;
               ircode.resize(ircode.size() - 1);
@@ -547,6 +550,9 @@ public:
 #endif  // BRAINFUCK_EMPLACE_AVAILABLE
               }
             } else if (size > 2) {
+              if (loopStack.empty()) {
+                throw std::runtime_error("Unmatched '[' is detected");
+              }
               int base = loopStack.top();
               const BfInst& prevInst1 = ircode[size - 1];
               const BfInst& prevInst2 = ircode[size - 2];
@@ -623,6 +629,9 @@ public:
           }
           break;
       }
+    }
+    if (!loopStack.empty()) {
+      throw std::runtime_error("Unmatched ']' is detected");
     }
   }
 
@@ -1138,7 +1147,7 @@ public:
   }
 
   void
-  dumpXbyak(std::ostream& os) BRAINFUCK_NOEXCEPT
+  dumpXbyak(std::ostream& os)
   {
     std::size_t size = cg.getSize();
     if (size == 0) {
