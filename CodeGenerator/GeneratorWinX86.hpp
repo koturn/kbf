@@ -86,11 +86,11 @@ private:
     // Write DOS header
     IMAGE_DOS_HEADER idh;
     idh.e_magic = IMAGE_DOS_SIGNATURE;
-    idh.e_cblp = 0x0050;
-    idh.e_cp = 0x0002;
+    idh.e_cblp = 0x0090;
+    idh.e_cp = 0x0003;
     idh.e_crlc = 0x0000;
     idh.e_cparhdr = 0x0004;
-    idh.e_minalloc = 0x000f;
+    idh.e_minalloc = 0x0000;
     idh.e_maxalloc = 0xffff;
     idh.e_ss = 0x0000;
     idh.e_sp = 0x00b8;
@@ -98,7 +98,7 @@ private:
     idh.e_ip = 0x0000;
     idh.e_cs = 0x0000;
     idh.e_lfarlc = 0x0040;
-    idh.e_ovno = 0x001a;
+    idh.e_ovno = 0x0000;
     std::fill_n(idh.e_res, lengthof(idh.e_res), 0x0000);
     idh.e_oemid = 0x0000;
     idh.e_oeminfo = 0x0000;
@@ -108,16 +108,14 @@ private:
 
     // Write DOS stub
     const u8 kDosStub[] =
-      "\xba\x10\x00"  // mov dx, 0x0010 (Offset to message data from here)
       "\x0e"  // push cs
       "\x1f"  // pop ds
+      "\xba\x0e\x00"  // mov dx, 0x000e (Offset to message data from here)
       "\xb4\x09"  // mov ah, 0x09 (Argument for int 0x21: print)
       "\xcd\x21"  // int 0x21
       "\xb8\x01\x4c"  // mov ax, 0x4c01 (Argument for int 0x21: exit)
       "\xcd\x21"  // int 0x21
-      "\x90"  // nop
-      "\x90"  // nop
-      "This program cannot be run in DOS mode.\r\n$\x00\x00\x00\x00\x00";
+      "This program cannot be run in DOS mode.\r\r\n$\x00\x00\x00\x00\x00\x00";
     write(kDosStub);
 
     // Write image file header
