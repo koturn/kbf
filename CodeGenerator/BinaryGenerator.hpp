@@ -119,6 +119,19 @@ protected:
     this->oStream.write(reinterpret_cast<const char*>(datum), sizeof(U) * kSize);
 #endif  // __cplusplus >= 201103 || defined(_MSC_VER) && _MSC_VER >= 1600
   }
+
+  void
+  skip(std::size_t size) CODE_GENERATOR_NOEXCEPT
+  {
+    if (size == 0) {
+      return;
+    }
+    if (size > 1) {
+      this->oStream.seekp(size - 1, std::ios_base::cur);
+    }
+    char data = 0x00;
+    this->oStream.write(&data, sizeof(data));
+  }
 };  // class BinaryGenerator
 
 

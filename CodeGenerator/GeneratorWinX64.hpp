@@ -37,7 +37,7 @@ private:
   emitHeaderImpl() CODE_GENERATOR_NOEXCEPT
   {
     // skip header
-    fill<0x400, u8>(0x00);
+    skip(kPeHeaderSizeWithPadding + kIdataSizeWithPadding);
 
     // - - - - - The start of program body - - - - - //
     write<u8>(0x56);
@@ -88,7 +88,7 @@ private:
     // Write padding
     DWORD codeSize = static_cast<DWORD>(oStream.tellp()) - (kPeHeaderSizeWithPadding + kIdataSizeWithPadding);
     DWORD codeSizeWithPadding = calcAlignedSize(codeSize, 0x1000);
-    fill<u8>(codeSizeWithPadding - codeSize, 0x00);
+    skip(codeSizeWithPadding - codeSize);
     // - - - - - The end of program body - - - - - //
 
     // - - - - - Program header - - - - - //
