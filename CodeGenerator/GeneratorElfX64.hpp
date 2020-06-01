@@ -275,10 +275,9 @@ private:
   void
   emitGetcharImpl() CODE_GENERATOR_NOEXCEPT
   {
-    // mov rax, 0x00
-    u8 opcode1[] = {0x48, 0xc7, 0xc0};
+    // xor rax, rax
+    u8 opcode1[] = {0x48, 0x31, 0xc0};
     write(opcode1);
-    write(static_cast<u32>(0x00));
     // xor edi, edi
     u8 opcode2[] = {0x31, 0xff};
     write(opcode2);
@@ -320,7 +319,7 @@ private:
     std::ostream::pos_type curPos = oStream.tellp();
     oStream.seekp(pos + static_cast<std::ostream::pos_type>(5), std::ios_base::beg);
     write(static_cast<u32>(curPos - oStream.tellp() - sizeof(u32)));
-    oStream.seekp(0, std::ios_base::end);
+    oStream.seekp(curPos, std::ios_base::beg);
     loopStack.pop();
   }
 
@@ -332,7 +331,7 @@ private:
     std::ostream::pos_type curPos = oStream.tellp();
     oStream.seekp(pos + static_cast<std::ostream::pos_type>(5), std::ios_base::beg);
     write(static_cast<u32>(curPos - oStream.tellp() - sizeof(u32)));
-    oStream.seekp(0, std::ios_base::end);
+    oStream.seekp(curPos, std::ios_base::beg);
     loopStack.pop();
   }
 
